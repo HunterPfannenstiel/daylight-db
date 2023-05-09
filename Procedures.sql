@@ -1,21 +1,34 @@
 DROP TYPE IF EXISTS store.new_cart_item;
+DROP PROCEDURE IF EXISTS store.check_cart_lock;
 DROP PROCEDURE IF EXISTS store.update_cart;
 DROP PROCEDURE IF EXISTS store.create_cart;
+DROP PROCEDURE IF EXISTS store.update_cart_lock;
+DROP PROCEDURE IF EXISTS store.create_order;
+DROP PROCEDURE IF EXISTS store.create_user_info;
+DROP PROCEDURE IF EXISTS store.create_account;
 
 CREATE TYPE store.new_cart_item AS (
 	cart_item_id INTEGER,
 	menu_item_id SMALLINT,
 	amount INTEGER,
 	extra_ids SMALLINT[]
-)
-
-CREATE OR REPLACE PROCEDURE store.update_cart("id" INTEGER, items JSON DEFAULT NULL)
+);
+--CART PROCEDURES
+CREATE OR REPLACE PROCEDURE store.check_cart_lock("id" INTEGER)
 LANGUAGE plpgsql AS
 $$
 BEGIN
 	IF EXISTS (SELECT C.cart_id FROM store.cart C WHERE C.cart_id = "id" AND C.is_locked = true) THEN
 		RAISE EXCEPTION 'Your cart is locked and is being processed for order. If you have not placed your order yet, please contact us.';
 	END IF;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE store.update_cart("id" INTEGER, items JSON DEFAULT NULL)
+LANGUAGE plpgsql AS
+$$
+BEGIN
+	CALL store.check_cart_lock("id");
 	IF items IS NOT NULL THEN
 		MERGE INTO store.cart_item T
 		USING (SELECT "id", I.cart_item_id, I.menu_item_id, I.amount
@@ -52,10 +65,73 @@ BEGIN
 END;
 $$;
 
-CALL store.create_cart(NULL, '[{"cart_item_id": 1, "menu_item_id": 1, "amount": 2, "extra_ids": [2, 12]}]');
-CALL store.update_cart(2, '[{"cart_item_id": 1, "amount": -82}]')
+CREATE OR REPLACE PROCEDURE store.update_cart_lock("id" INTEGER, "lock" BOOLEAN)
+LANGUAGE plpgsql AS
+$$
+BEGIN
+	UPDATE store.cart
+	SET is_locked = "lock"
+	WHERE cart_id = "id";
+END;
+$$;
+--END OF CART PROCEDURES
 
-SELECT C.cart_id, CI.menu_item_id, CE.extra_id, CI.amount FROM store.cart C
-LEFT JOIN store.cart_item CI ON CI.cart_id = C.cart_id
-LEFT JOIN store.cart_extra CE ON CE.cart_item_id = CI.cart_item_id AND CE.cart_id = C.cart_id
-WHERE CI.cart_id = 2
+--ORDER PROCEDURES
+	--customer_info - If customer doesn't have an account, this needs to be provided
+	--order_user_info_id - If the customer has an account, this can be provided instead of 'customer_info'
+CREATE OR REPLACE PROCEDURE store.create_order(order_cart_id INTEGER, order_location_id SMALLINT, 
+	order_pickup_time_id SMALLINT, order_pickup_date DATE, order_payment_processor SMALLINT, OUT "id" INTEGER,
+	customer_info JSON DEFAULT NULL, order_account_id INTEGER DEFAULT NULL, order_user_info_id INTEGER DEFAULT NULL)
+LANGUAGE plpgsql AS
+$$
+DECLARE customer_info_id INTEGER;
+BEGIN
+	CALL store.check_cart_lock(order_cart_id);
+	IF customer_info IS NOT NULL THEN
+		INSERT INTO store.customer_order_info(first_name, last_name, email, phone_number)
+		VALUES(customer_info->>'first_name', customer_info->>'last_name', customer_info->>'email', customer_info->>'phone_number')
+		RETURNING customer_order_info_id INTO customer_info_id;
+		
+		INSERT INTO store.order(cart_id, customer_order_info_id, location_id, pickup_time_id, pickup_date, payment_processor_id, account_id)
+		VALUES(order_cart_id, customer_info_id, order_location_id, order_pickup_time_id, order_pickup_date, order_payment_processor, order_account_id)
+		RETURNING order_id INTO "id";
+	ELSE
+		INSERT INTO store.order(cart_id, location_id, pickup_time_id, pickup_date, payment_processor_id, account_id, user_info_id)
+		VALUES(order_cart_id, order_location_id, order_pickup_time_id, order_pickup_date, order_payment_processor, order_account_id, order_user_info_id)
+		RETURNING order_id INTO "id";
+	END IF;
+		
+	CALL store.update_cart_lock(order_cart_id, true);
+END;
+$$;
+--END OF ORDER PROCEDURES
+
+--ACCOUNT PROCEDURES
+CREATE OR REPLACE PROCEDURE store.create_account(user_email TEXT, OUT "id" INTEGER, user_info JSON DEFAULT NULL)
+LANGUAGE plpgsql AS
+$$
+BEGIN
+	INSERT INTO store.account(email)
+	VALUES(user_email)
+	RETURNING account_id INTO "id";
+	
+	IF user_info IS NOT NULL THEN
+		CALL store.create_user_info(user_info->>'first_name', user_info->>'last_name', user_info->>'phone_number', "id");
+	END IF;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE store.create_user_info(user_first_name TEXT, user_last_name TEXT, user_phone_number TEXT, user_account_id INTEGER)
+LANGUAGE plpgsql AS
+$$
+DECLARE "id" INTEGER;
+BEGIN
+	INSERT INTO store.user_info(first_name, last_name, phone_number)
+	VALUES(user_first_name, user_last_name, user_phone_number)
+	RETURNING user_info_id INTO "id";
+	
+	INSERT INTO store.account_user_info(user_info_id, account_id)
+	VALUES("id", user_account_id);
+END;
+$$;
+--END OF ACCOUNT PROCEDURES
