@@ -44,11 +44,11 @@ CREATE TABLE IF NOT EXISTS store."order"
     is_printed boolean NOT NULL DEFAULT false,
     is_verified boolean NOT NULL DEFAULT false,
     is_error boolean NOT NULL DEFAULT false,
-    subtotal numeric(6, 2) NOT NULL,
-    tax numeric(5, 2) NOT NULL,
-    total_price numeric(6, 2) NOT NULL,
+    subtotal numeric(6, 2),
+    tax numeric(5, 2),
+    total_price numeric(6, 2),
     payment_uid text,
-    created_on date NOT NULL,
+    created_on timestamp(0) NOT NULL DEFAULT NOW(),
     account_id integer,
     user_info_id integer,
     PRIMARY KEY (order_id)
@@ -60,7 +60,6 @@ CREATE TABLE IF NOT EXISTS store.location
     city text NOT NULL,
     state text NOT NULL,
     zip numeric NOT NULL,
-    street text NOT NULL,
     address text NOT NULL,
     common_name text,
     phone_number text,
@@ -257,8 +256,8 @@ CREATE TABLE IF NOT EXISTS store.account_user_info
 
 CREATE TABLE IF NOT EXISTS store.pickup_time
 (
-    pickup_time_id smallint NOT NULL,
-    pickup_time time without time zone NOT NULL,
+    pickup_time_id smallserial NOT NULL,
+    pickup_time time(0) without time zone NOT NULL,
     PRIMARY KEY (pickup_time_id)
 );
 
@@ -324,6 +323,9 @@ ALTER TABLE IF EXISTS store."order"
     ON DELETE NO ACTION
     NOT VALID;
 
+ALTER TABLE IF EXISTS store."order"
+	ADD CONSTRAINT customer_info_or_user_info 
+	CHECK(customer_order_info_id IS NOT NULL OR (user_info_id IS NOT NULL AND account_id IS NOT NULL));
 
 ALTER TABLE IF EXISTS store.cart_item
     ADD FOREIGN KEY (cart_id)
