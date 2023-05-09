@@ -248,3 +248,27 @@ INSERT INTO store.weekday(weekday_id, weekday) VALUES
 
 INSERT INTO store.weekday_availability(menu_item_id, weekday_id) VALUES
 (21, 2);
+
+ALTER SEQUENCE store.location_location_id_seq RESTART WITH 1;
+
+INSERT INTO store.location(city, state, zip, address, common_name, phone_number)
+VALUES('Hutchinson', 'Kansas', '67502', '1435 East 30th Ave.', '30th Street Daylight Donuts', '(620) 500-5550'),
+('Hutchinson', 'Kansas', '67501', '305 N Main St.', 'Main Street Daylight Donuts', '(620) 259-2488');
+
+ALTER SEQUENCE store.payment_processor_payment_processor_id_seq RESTART WITH 1;
+
+INSERT INTO store.payment_processor(payment_processor)
+VALUES('Stripe'), ('PayPal');
+
+ALTER SEQUENCE store.pickup_time_pickup_time_id_seq RESTART WITH 1;
+
+INSERT INTO store.pickup_time(pickup_time)
+VALUES('5:00 AM'), ('5:30 AM'), 
+('6:00 AM'), ('6:30 AM'),
+('7:00 AM'), ('7:30 AM'),
+('7:00 AM'), ('7:30 AM'),
+('8:00 AM'), ('8:30 AM'),
+('9:00 AM'), ('9:30 AM'),
+('10:00 AM'), ('10:30 AM'),
+('11:00 AM'), ('11:30 AM'),
+('12:00 PM');
