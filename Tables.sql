@@ -31,12 +31,11 @@ DROP TABLE IF EXISTS store.account_user_info;
 DROP TABLE IF EXISTS store.account;
 DROP TABLE IF EXISTS store.user_info;
 
-
 CREATE TABLE IF NOT EXISTS store."order"
 (
     order_id serial NOT NULL,
     cart_id integer NOT NULL,
-    customer_order_info_id integer NOT NULL,
+    customer_order_info_id integer,
     location_id smallint NOT NULL,
     pickup_time_id smallint NOT NULL,
     pickup_date date NOT NULL,

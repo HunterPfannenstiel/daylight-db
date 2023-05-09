@@ -4,6 +4,7 @@ DROP PROCEDURE IF EXISTS store.update_cart;
 DROP PROCEDURE IF EXISTS store.create_cart;
 DROP PROCEDURE IF EXISTS store.update_cart_lock;
 DROP PROCEDURE IF EXISTS store.create_order;
+DROP PROCEDURE IF EXISTS store.confirm_order;
 DROP PROCEDURE IF EXISTS store.create_user_info;
 DROP PROCEDURE IF EXISTS store.create_account;
 
@@ -102,6 +103,35 @@ BEGIN
 	END IF;
 		
 	CALL store.update_cart_lock(order_cart_id, true);
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE store.confirm_order(confirm_order_id INTEGER, order_subtotal NUMERIC(6,2), order_tax NUMERIC(5,2), order_total NUMERIC(6,2), order_payment_uid TEXT)
+LANGUAGE plpgsql AS
+$$
+DECLARE order_cart_id INTEGER;
+BEGIN
+	UPDATE store.order
+	SET subtotal = order_subtotal, tax = order_tax, total_price = order_total, payment_uid = order_payment_uid,
+		is_verified = true, is_error = false
+	WHERE order_id = confirm_order_id;
+	
+	SELECT O.cart_id INTO order_cart_id FROM store.order O WHERE O.order_id = confirm_order_id;
+	
+	CALL store.update_cart_lock(order_cart_id, true);
+	
+	MERGE INTO store.cart_item T
+	USING (SELECT CI.cart_id, CI.cart_item_id, (CI.amount * (MI.price)) AS subtotal,
+		   COALESCE((SELECT SUM(COALESCE(E.price * CI.amount, 0))
+			FROM store.cart_extra CE
+			JOIN store.extra E ON E.extra_id = CE.extra_id
+			WHERE CE.cart_item_id = CI.cart_item_id AND CE.cart_id = CI.cart_id
+			), 0) AS extra_price
+		   	FROM store.cart_item CI
+			JOIN store.menu_item MI ON MI.menu_item_id = CI.menu_item_id
+		  	WHERE CI.cart_id = order_cart_id) S ON S.cart_item_id = T.cart_item_id AND S.cart_id = T.cart_id
+	WHEN MATCHED THEN
+		UPDATE SET subtotal = S.subtotal + S.extra_price;
 END;
 $$;
 --END OF ORDER PROCEDURES
