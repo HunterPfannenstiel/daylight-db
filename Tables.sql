@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS store.location
 CREATE TABLE IF NOT EXISTS store.cart
 (
     cart_id serial NOT NULL,
-    last_modified time without time zone NOT NULL,
+    last_modified timestamp without time zone DEFAULT current_timestamp NOT NULL,
     is_locked boolean NOT NULL DEFAULT false,
     PRIMARY KEY (cart_id)
 );

@@ -266,7 +266,6 @@ INSERT INTO store.pickup_time(pickup_time)
 VALUES('5:00 AM'), ('5:30 AM'), 
 ('6:00 AM'), ('6:30 AM'),
 ('7:00 AM'), ('7:30 AM'),
-('7:00 AM'), ('7:30 AM'),
 ('8:00 AM'), ('8:30 AM'),
 ('9:00 AM'), ('9:30 AM'),
 ('10:00 AM'), ('10:30 AM'),

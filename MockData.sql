@@ -1,8 +1,4 @@
 --Cart
-CALL store.create_cart(NULL, '[{"cart_item_id": 1, "menu_item_id": 8, "amount": 12}, 
-					   {"cart_item_id": 2, "menu_item_id": 3, "amount": 7, "extra_ids": [9, 12]}, 
-					   {"cart_item_id": 3, "menu_item_id": 2, "amount": 3, "extra_ids": [9, 12]},
-					   {"cart_item_id": 4, "menu_item_id": 20, "amount": 2}]');
 					   
 CALL store.create_cart(NULL, '[{"cart_item_id": 1, "menu_item_id": 21, "amount": 3}, 
 					   {"cart_item_id": 2, "menu_item_id": 5, "amount": 8, "extra_ids": [9]}, 

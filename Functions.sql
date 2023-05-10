@@ -95,11 +95,10 @@ BEGIN
 END;
 $func$;
 
-SELECT * FROM store.fetch_item_details('Kolache')
+SELECT * FROM store.fetch_item_details('Kolache');
 --
 
 --Cart Functions
-DROP FUNCTION IF EXISTS store.view_cart;
 CREATE OR REPLACE FUNCTION store.view_cart(user_cart_id INTEGER)
 RETURNS TABLE (unit_price NUMERIC(4,2), cart_item_id INTEGER, menu_item_id SMALLINT, amount INTEGER, name TEXT, image TEXT, group_name TEXT, 
 			  group_size SMALLINT, group_price NUMERIC(4,2), extra_info JSON)
@@ -122,3 +121,41 @@ BEGIN
 END;
 $func$;
 --END OF CART FUNCTIONS
+
+--Checkout Functions
+CREATE OR REPLACE FUNCTION store.get_checkout_info()
+RETURNS TABLE (locations JSON, pickup_times JSON)
+LANGUAGE plpgsql AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT t1.locations, t2.times
+	FROM
+		(SELECT json_agg(L) AS locations FROM store.location L) t1
+	CROSS JOIN
+		(SELECT json_agg(time) AS times FROM (SELECT PT.pickup_time_id, to_char(PT.pickup_time, 'HH:MI AM') AS pickup_time FROM store.pickup_time PT ORDER BY PT.pickup_time ASC) AS time) t2;
+END;
+$func$;
+
+CREATE OR REPLACE FUNCTION store.get_cart_availability(user_cart_id INTEGER)
+RETURNS TABLE (available_weekdays JSON[], available_daterange JSON[])
+LANGUAGE plpgsql AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT t1.available_weekdays, t2.available_daterange
+	FROM
+	(SELECT array_agg(json_build_object('weekday', W.weekday, 'menu_item_id', CI.menu_item_id)) AS available_weekdays
+		FROM store.cart_item CI
+		JOIN store.weekday_availability WA ON WA.menu_item_id = CI.menu_item_id
+		JOIN store.weekday W ON W.weekday_id = WA.weekday_id
+		WHERE CI.cart_id = user_cart_id) t1
+	CROSS JOIN
+	(SELECT array_agg(json_build_object('menu_item_id', IRA.menu_item_id, 'range', RA.range_availability)) AS available_daterange
+	FROM store.cart_item CI
+	JOIN store.item_range_availability IRA ON IRA.menu_item_id = CI.menu_item_id
+	JOIN store.range_availability RA ON RA.range_availability_id = IRA.range_availability_id
+	WHERE CI.cart_id = user_cart_id) t2;
+END;
+$func$;
+--END OF CHECKOUT FUNCTIONS

@@ -62,7 +62,7 @@ LANGUAGE plpgsql AS
 $$
 BEGIN
 	INSERT INTO store.cart(last_modified)
-	VALUES (CURRENT_TIME)
+	VALUES (CURRENT_TIMESTAMP)
 	RETURNING cart_id INTO "id";
 	CALL store.update_cart("id", items);
 END;
