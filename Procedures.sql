@@ -7,6 +7,8 @@ DROP PROCEDURE IF EXISTS store.create_order;
 DROP PROCEDURE IF EXISTS store.confirm_order;
 DROP PROCEDURE IF EXISTS store.create_user_info;
 DROP PROCEDURE IF EXISTS store.create_account;
+DROP PROCEDURE IF EXISTS store.modify_menu_item;
+DROP PROCEDURE IF EXISTS store.update_item_extras;
 
 CREATE TYPE store.new_cart_item AS (
 	cart_item_id INTEGER,
@@ -165,3 +167,44 @@ BEGIN
 END;
 $$;
 --END OF ACCOUNT PROCEDURES
+
+--Menu Procedures
+CREATE OR REPLACE PROCEDURE store.modify_menu_item(item_name TEXT, item_price NUMERIC(4,2), item_image TEXT, item_description TEXT, OUT new_id SMALLINT, item_grouping_id SMALLINT DEFAULT NULL, item_id SMALLINT DEFAULT NULL)
+LANGUAGE plpgsql AS
+$$
+BEGIN
+	IF item_id IS NOT NULL THEN
+		UPDATE store.menu_item
+		SET name = COALESCE(item_name, name), price = COALESCE(item_price, price), image = COALESCE(item_image, image),
+			description = COALESCE(item_description, description), grouping_id = COALESCE(item_grouping_id, grouping_id)
+		WHERE menu_item_id = item_id;
+	ELSIF item_name IS NULL OR item_price IS NULL OR item_image IS NULL OR item_description IS NULL THEN
+		RAISE EXCEPTION 'All of the required fields to create a menu item were not provided, please provide all fields.';
+	ELSE
+		INSERT INTO store.menu_item(name, price, image, description, grouping_id)
+		VALUES(item_name, item_price, item_image, item_description, item_grouping_id)
+		RETURNING menu_item_id INTO new_id;
+	END IF;
+END;
+$$;
+--{menu_item_id: SMALLINT, extra_group_id: SMALLINT, remove: boolean}
+CREATE OR REPLACE PROCEDURE store.update_item_extras(item_info JSON)
+LANGUAGE plpgsql AS
+$$
+DECLARE json_array JSON[] := ARRAY(SELECT json_array_elements(item_info));
+DECLARE json_value JSON;
+BEGIN
+	FOREACH json_value IN ARRAY json_array
+	LOOP
+		CASE
+			WHEN json_value->>'remove' = 'true' THEN
+				DELETE FROM store.item_extra_group
+				WHERE menu_item_id = (json_value->>'menu_item_id')::SMALLINT AND extra_group_id = (json_value->>'extra_group_id')::SMALLINT;
+			ELSE
+				INSERT INTO store.item_extra_group(extra_group_id, menu_item_id)
+				VALUES((json_value->>'extra_group_id')::SMALLINT, (json_value->>'menu_item_id')::SMALLINT);
+		END CASE;
+	END LOOP;
+END;
+$$;
+--END OF MENU PROCEDURES

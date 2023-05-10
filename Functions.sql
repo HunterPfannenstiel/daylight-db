@@ -96,3 +96,29 @@ END;
 $func$;
 
 SELECT * FROM store.fetch_item_details('Kolache')
+--
+
+--Cart Functions
+DROP FUNCTION IF EXISTS store.view_cart;
+CREATE OR REPLACE FUNCTION store.view_cart(user_cart_id INTEGER)
+RETURNS TABLE (unit_price NUMERIC(4,2), cart_item_id INTEGER, menu_item_id SMALLINT, amount INTEGER, name TEXT, image TEXT, group_name TEXT, 
+			  group_size SMALLINT, group_price NUMERIC(4,2), extra_info JSON)
+LANGUAGE plpgsql AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT MI.price AS unit_price, CI.cart_item_id, MI.menu_item_id, CI.amount, MI.name, MI.image, G.name AS group_name,
+	G.size AS group_size, G.price AS group_price, (SELECT json_build_object('info', json_agg(json_build_object('category', EC.name, 'extra', E.name)),
+		'ids', array_agg(E.extra_id), 'price', SUM(COALESCE(E.price, 0)))
+		FROM store.cart_extra CE
+		JOIN store.extra E ON E.extra_id = CE.extra_id
+		JOIN store.extra_category EC ON EC.extra_category_id = E.extra_category_id
+		WHERE CE.cart_id = CI.cart_id AND CE.cart_item_id = CI.cart_item_id
+		GROUP BY CI.cart_item_id) AS extra_info
+	FROM store.cart_item CI
+	JOIN store.menu_item MI ON MI.menu_item_id = CI.menu_item_id
+	LEFT JOIN store.grouping G ON G.grouping_id = MI.grouping_id
+	WHERE CI.cart_id = user_cart_id;
+END;
+$func$;
+--END OF CART FUNCTIONS

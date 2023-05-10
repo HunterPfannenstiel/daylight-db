@@ -112,6 +112,7 @@ CREATE TABLE IF NOT EXISTS store.menu_item
     description text NOT NULL,
     grouping_id smallint,
     is_active boolean NOT NULL DEFAULT true,
+	is_archived boolean NOT NULL DEFAULT false,
     PRIMARY KEY (menu_item_id),
     UNIQUE (name)
 );
