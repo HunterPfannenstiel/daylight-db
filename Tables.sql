@@ -99,6 +99,7 @@ CREATE TABLE IF NOT EXISTS store."grouping"
     name text NOT NULL,
     size smallint NOT NULL,
     image text NOT NULL,
+	is_active boolean DEFAULT true NOT NULL,
     PRIMARY KEY (grouping_id),
 	UNIQUE (name)
 );

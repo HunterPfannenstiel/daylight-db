@@ -53,11 +53,16 @@ END;
 $func$;
 --END OF FUNCTIONS CREATED IN 'Tables.sql'
 DROP FUNCTION IF EXISTS store.fetch_groupings;
+DROP FUNCTION IF EXISTS store.fetch_grouping_names;
 DROP FUNCTION IF EXISTS store.fetch_item_details;
+DROP FUNCTION IF EXISTS store.fetch_group_item_details;
 DROP FUNCTION IF EXISTS store.view_cart;
+DROP FUNCTION IF EXISTS store.check_cart_process;
 DROP FUNCTION IF EXISTS store.get_checkout_info;
 DROP FUNCTION IF EXISTS store.get_cart_availability;
+DROP FUNCTION IF EXISTS store.fetch_group_info;
 DROP FUNCTION IF EXISTS store.fetch_menu_names;
+DROP FUNCTION IF EXISTS store.fetch_categories;
 
 --Fetches the various groupings and displays them like a menu item
 CREATE OR REPLACE FUNCTION store.fetch_groupings()
@@ -67,11 +72,22 @@ $func$
 BEGIN
 	RETURN QUERY
 	SELECT G.name, G.image, G.price 
-	FROM store.grouping G;
+	FROM store.grouping G
+	WHERE G.is_active = true;
 END;
 $func$;
 
-SELECT * FROM store.fetch_groupings();
+CREATE OR REPLACE FUNCTION store.fetch_grouping_names()
+RETURNS TABLE (names TEXT[])
+LANGUAGE plpgsql AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT array_agg(G.name) AS names
+	FROM store.grouping G
+	WHERE G.is_active = true;
+END;
+$func$;
 
 --Fetches the details of a menu item
 CREATE OR REPLACE FUNCTION store.fetch_item_details(item_name TEXT)
@@ -94,6 +110,41 @@ BEGIN
 		GROUP BY MI.name, MI.menu_item_id, MI.price, MI.image, MI.description, G.price, G.name, G.size, EC.name
 	) tb
 	GROUP BY tb.name, tb.menu_item_id, tb.price, tb.image, tb.description, tb.group_price, tb.group_name, tb.group_size;
+END;
+$func$;
+
+CREATE OR REPLACE FUNCTION store.fetch_group_item_details(g_name TEXT)
+RETURNS TABLE (name TEXT, id SMALLINT, price NUMERIC(4,2), image TEXT, description TEXT, group_price NUMERIC(4,2), group_name TEXT, group_size SMALLINT, extras JSON)
+LANGUAGE plpgsql AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT tb.name, tb.menu_item_id AS id, tb.price, tb.image, tb.description, tb.group_price, tb.group_name, tb.group_size, json_agg(tb.extras) AS extras
+	FROM(
+		SELECT MI.name, MI.menu_item_id, MI.price, MI.image, MI.description, G.price AS group_price, G.name AS group_name, G.size AS group_size,
+		json_build_object('category', EC.name, 'extras', json_agg(json_build_object('name', E.name, 'price', E.price, 'id', E.extra_id))) AS extras
+		FROM store.menu_item MI
+		LEFT JOIN store.item_extra_group IEG ON IEG.menu_item_id = MI.menu_item_id
+		LEFT JOIN store.extra_group_extra EGE ON EGE.extra_group_id = IEG.extra_group_id
+		LEFT JOIN store.extra E ON E.extra_id = EGE.extra_id
+		LEFT JOIN store.extra_category EC ON EC.extra_category_id = E.extra_category_id
+		JOIN store.grouping G ON G.grouping_id = MI.grouping_id
+		WHERE G.name = g_name
+		GROUP BY MI.name, MI.menu_item_id, MI.price, MI.image, MI.description, G.price, G.name, G.size, EC.name
+	) tb
+	GROUP BY tb.name, tb.menu_item_id, tb.price, tb.image, tb.description, tb.group_price, tb.group_name, tb.group_size;
+END;
+$func$;
+
+CREATE OR REPLACE FUNCTION store.fetch_group_info(g_name TEXT)
+RETURNS TABLE (name TEXT, price NUMERIC(4,2), size SMALLINT)
+LANGUAGE plpgsql AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT G.name, G.price, G.size
+	FROM store.grouping G
+	WHERE G.name = g_name;
 END;
 $func$;
 
@@ -130,6 +181,23 @@ BEGIN
 	JOIN store.menu_item MI ON MI.menu_item_id = CI.menu_item_id
 	LEFT JOIN store.grouping G ON G.grouping_id = MI.grouping_id
 	WHERE CI.cart_id = user_cart_id;
+END;
+$func$;
+
+CREATE OR REPLACE FUNCTION store.check_cart_process(user_cart_id INTEGER, OUT status TEXT)
+RETURNS TEXT
+LANGUAGE plpgsql AS
+$func$
+BEGIN
+	IF (SELECT C.is_locked FROM store.cart C WHERE C.cart_id = user_cart_id) THEN
+		IF (SELECT O.is_verified FROM store.order O WHERE O.cart_id = user_cart_id) THEN
+			status := 'Complete';
+		ELSE
+			status := 'Pending';
+		END IF;
+	ELSE
+		status := 'Open';
+	END IF;
 END;
 $func$;
 --END OF CART FUNCTIONS
@@ -174,10 +242,11 @@ $func$;
 
 --Category Functions
 CREATE OR REPLACE FUNCTION store.fetch_categories()
-RETURNS TABLE (name TEXT, item_category_id SMALLINT)
+RETURNS TABLE (category TEXT, subcategories TEXT[])
 LANGUAGE plpgsql AS
 $func$
 BEGIN
+	RETURN QUERY
 	SELECT IC.name AS category, array_agg(ISC.name) AS subcategories
 	FROM store.item_category IC
 	LEFT JOIN store.item_subcategory ISC ON ISC.item_category_id = IC.item_category_id
