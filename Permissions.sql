@@ -18,6 +18,8 @@ GRANT EXECUTE ON FUNCTION store.get_cart_availability(user_cart_id integer) TO d
 GRANT EXECUTE ON FUNCTION store.get_checkout_info() TO daylight_user;
 
 GRANT EXECUTE ON FUNCTION store.view_cart(user_cart_id integer) TO daylight_user;
+
+GRANT EXECUTE ON FUNCTION store.fetch_categories() TO daylight_user;
 --
 
 --Procedure Permissions
@@ -119,4 +121,60 @@ REVOKE INSERT, SELECT, UPDATE, DELETE ON TABLE store.range_availability FROM day
 REVOKE INSERT, SELECT, UPDATE, DELETE ON TABLE store.user_info FROM daylight_user;
 REVOKE INSERT, SELECT, UPDATE, DELETE ON TABLE store.weekday FROM daylight_user;
 REVOKE INSERT, SELECT, UPDATE, DELETE ON TABLE store.weekday_availability FROM daylight_user;
+--
+
+--Sequence Permissions
+GRANT ALL ON SEQUENCE store.account_account_id_seq TO daylight_user;
+
+GRANT ALL ON SEQUENCE store.cart_cart_id_seq TO daylight_user;
+
+GRANT ALL ON SEQUENCE store.customer_order_info_customer_order_info_id_seq TO daylight_user;
+
+GRANT ALL ON SEQUENCE store.extra_category_extra_category_id_seq TO daylight_user;
+
+GRANT ALL ON SEQUENCE store.extra_extra_id_seq TO daylight_user;
+
+GRANT ALL ON SEQUENCE store.extra_group_extra_group_id_seq TO daylight_user;
+
+GRANT ALL ON SEQUENCE store.grouping_grouping_id_seq TO daylight_user;
+
+GRANT ALL ON SEQUENCE store.item_category_item_category_id_seq TO daylight_user;
+
+GRANT ALL ON SEQUENCE store.item_subcategory_item_subcategory_id_seq TO daylight_user;
+
+GRANT ALL ON SEQUENCE store.location_location_id_seq TO daylight_user;
+
+GRANT ALL ON SEQUENCE store.menu_item_menu_item_id_seq TO daylight_user;
+
+GRANT ALL ON SEQUENCE store.order_order_id_seq TO daylight_user;
+
+GRANT ALL ON SEQUENCE store.payment_processor_payment_processor_id_seq TO daylight_user;
+
+GRANT ALL ON SEQUENCE store.pickup_time_pickup_time_id_seq TO daylight_user;
+
+GRANT ALL ON SEQUENCE store.range_availability_range_availability_id_seq TO daylight_user;
+
+GRANT ALL ON SEQUENCE store.user_info_user_info_id_seq TO daylight_user;
+
+GRANT ALL ON SEQUENCE store.weekday_availability_menu_item_id_seq TO daylight_user;
+--
+
+--Revoke Sequence
+REVOKE ALL ON SEQUENCE store.account_account_id_seq FROM daylight_user;
+REVOKE ALL ON SEQUENCE store.cart_cart_id_seq FROM daylight_user;
+REVOKE ALL ON SEQUENCE store.customer_order_info_customer_order_info_id_seq FROM daylight_user;
+REVOKE ALL ON SEQUENCE store.extra_category_extra_category_id_seq FROM daylight_user;
+REVOKE ALL ON SEQUENCE store.extra_extra_id_seq FROM daylight_user;
+REVOKE ALL ON SEQUENCE store.extra_group_extra_group_id_seq FROM daylight_user;
+REVOKE ALL ON SEQUENCE store.grouping_grouping_id_seq FROM daylight_user;
+REVOKE ALL ON SEQUENCE store.item_category_item_category_id_seq FROM daylight_user;
+REVOKE ALL ON SEQUENCE store.item_subcategory_item_subcategory_id_seq FROM daylight_user;
+REVOKE ALL ON SEQUENCE store.location_location_id_seq FROM daylight_user;
+REVOKE ALL ON SEQUENCE store.menu_item_menu_item_id_seq FROM daylight_user;
+REVOKE ALL ON SEQUENCE store.order_order_id_seq FROM daylight_user;
+REVOKE ALL ON SEQUENCE store.payment_processor_payment_processor_id_seq FROM daylight_user;
+REVOKE ALL ON SEQUENCE store.pickup_time_pickup_time_id_seq FROM daylight_user;
+REVOKE ALL ON SEQUENCE store.range_availability_range_availability_id_seq FROM daylight_user;
+REVOKE ALL ON SEQUENCE store.user_info_user_info_id_seq FROM daylight_user;
+REVOKE ALL ON SEQUENCE store.weekday_availability_menu_item_id_seq FROM daylight_user;
 --

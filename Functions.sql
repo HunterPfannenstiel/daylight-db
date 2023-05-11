@@ -171,3 +171,18 @@ BEGIN
 END;
 $func$;
 --END OF CHECKOUT FUNCTIONS
+
+--Category Functions
+CREATE OR REPLACE FUNCTION store.fetch_categories()
+RETURNS TABLE (name TEXT, item_category_id SMALLINT)
+LANGUAGE plpgsql AS
+$func$
+BEGIN
+	SELECT IC.name AS category, array_agg(ISC.name) AS subcategories
+	FROM store.item_category IC
+	LEFT JOIN store.item_subcategory ISC ON ISC.item_category_id = IC.item_category_id
+		AND ISC.is_active = true
+	WHERE IC.is_active = true
+	GROUP BY IC.name;
+END;
+$func$;

@@ -53,6 +53,9 @@ BEGIN
 			VALUES (S.cart_item_id, S.id, S.eId);
 			
 		DELETE FROM store.cart_item CI WHERE CI.cart_id = "id" AND CI.amount < 1;
+		UPDATE store.cart
+		SET last_modified = CURRENT_TIMESTAMP
+		WHERE cart_id = "id";
 	END IF;
 END;
 $$;
