@@ -38,8 +38,6 @@ BEGIN
 END;
 $func$;
 
-SELECT * FROM store.fetch_menu_items('Savory', NULL);
-
 --Fetches the specific items within a grouping
 CREATE OR REPLACE FUNCTION store.fetch_grouping_items(grouping_name TEXT)
 RETURNS SETOF store.menu_items
@@ -53,9 +51,13 @@ BEGIN
 	WHERE G.name = grouping_name AND MI.is_active = true;
 END;
 $func$;
-
-SELECT * FROM store.fetch_grouping_items('Donut Holes');
 --END OF FUNCTIONS CREATED IN 'Tables.sql'
+DROP FUNCTION IF EXISTS store.fetch_groupings;
+DROP FUNCTION IF EXISTS store.fetch_item_details;
+DROP FUNCTION IF EXISTS store.view_cart;
+DROP FUNCTION IF EXISTS store.get_checkout_info;
+DROP FUNCTION IF EXISTS store.get_cart_availability;
+DROP FUNCTION IF EXISTS store.fetch_menu_names;
 
 --Fetches the various groupings and displays them like a menu item
 CREATE OR REPLACE FUNCTION store.fetch_groupings()
@@ -73,14 +75,14 @@ SELECT * FROM store.fetch_groupings();
 
 --Fetches the details of a menu item
 CREATE OR REPLACE FUNCTION store.fetch_item_details(item_name TEXT)
-RETURNS TABLE (name TEXT, id SMALLINT, price NUMERIC(4,2), image TEXT, description TEXT, groupprice NUMERIC(4,2), groupname TEXT, groupsize SMALLINT, extras JSON)
+RETURNS TABLE (name TEXT, id SMALLINT, price NUMERIC(4,2), image TEXT, description TEXT, group_price NUMERIC(4,2), group_name TEXT, group_size SMALLINT, extras JSON)
 LANGUAGE plpgsql AS
 $func$
 BEGIN
 	RETURN QUERY
-	SELECT tb.name, tb.menu_item_id AS id, tb.price, tb.image, tb.description, tb.groupprice, tb.groupname, tb.groupsize, json_agg(tb.extras) AS extras
+	SELECT tb.name, tb.menu_item_id AS id, tb.price, tb.image, tb.description, tb.group_price, tb.group_name, tb.group_size, json_agg(tb.extras) AS extras
 	FROM(
-		SELECT MI.name, MI.menu_item_id, MI.price, MI.image, MI.description, G.price AS groupprice, G.name AS groupname, G.size AS groupsize,
+		SELECT MI.name, MI.menu_item_id, MI.price, MI.image, MI.description, G.price AS group_price, G.name AS group_name, G.size AS group_size,
 		json_build_object('category', EC.name, 'extras', json_agg(json_build_object('name', E.name, 'price', E.price, 'id', E.extra_id))) AS extras
 		FROM store.menu_item MI
 		LEFT JOIN store.item_extra_group IEG ON IEG.menu_item_id = MI.menu_item_id
@@ -91,11 +93,21 @@ BEGIN
 		WHERE MI.name = item_name
 		GROUP BY MI.name, MI.menu_item_id, MI.price, MI.image, MI.description, G.price, G.name, G.size, EC.name
 	) tb
-	GROUP BY tb.name, tb.menu_item_id, tb.price, tb.image, tb.description, tb.groupprice, tb.groupname, tb.groupsize;
+	GROUP BY tb.name, tb.menu_item_id, tb.price, tb.image, tb.description, tb.group_price, tb.group_name, tb.group_size;
 END;
 $func$;
 
-SELECT * FROM store.fetch_item_details('Kolache');
+CREATE OR REPLACE FUNCTION store.fetch_menu_names()
+RETURNS TABLE (name TEXT)
+LANGUAGE plpgsql AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT MI.name
+	FROM store.menu_item MI
+	WHERE MI.is_active = true;
+END;
+$func$;
 --
 
 --Cart Functions
