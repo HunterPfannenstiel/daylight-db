@@ -508,7 +508,8 @@ CREATE TYPE store.menu_items AS (
 
 CREATE OR REPLACE FUNCTION store.fetch_menu_items(category TEXT DEFAULT NULL, subcategory TEXT DEFAULT NULL)
 RETURNS SETOF store.menu_items
-LANGUAGE plpgsql AS
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
 $func$
 BEGIN
 	IF (category IS NULL) THEN
@@ -535,7 +536,8 @@ $func$;
 
 CREATE OR REPLACE FUNCTION store.fetch_grouping_items(grouping_name TEXT)
 RETURNS SETOF store.menu_items
-LANGUAGE plpgsql AS
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
 $func$
 BEGIN
 	RETURN QUERY

@@ -1,5 +1,4 @@
---Cart
-					   
+--Cart				   
 CALL store.create_cart(NULL, '[{"cart_item_id": 1, "menu_item_id": 21, "amount": 3}, 
 					   {"cart_item_id": 2, "menu_item_id": 5, "amount": 8, "extra_ids": [9]}, 
 					   {"cart_item_id": 3, "menu_item_id": 5, "amount": 20, "extra_ids": [12]},

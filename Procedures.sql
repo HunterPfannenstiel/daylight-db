@@ -18,7 +18,8 @@ CREATE TYPE store.new_cart_item AS (
 );
 --CART PROCEDURES
 CREATE OR REPLACE PROCEDURE store.check_cart_lock("id" INTEGER)
-LANGUAGE plpgsql AS
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
 $$
 BEGIN
 	IF EXISTS (SELECT C.cart_id FROM store.cart C WHERE C.cart_id = "id" AND C.is_locked = true) THEN
@@ -28,7 +29,8 @@ END;
 $$;
 
 CREATE OR REPLACE PROCEDURE store.update_cart("id" INTEGER, items JSON DEFAULT NULL)
-LANGUAGE plpgsql AS
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
 $$
 BEGIN
 	CALL store.check_cart_lock("id");
@@ -61,7 +63,8 @@ END;
 $$;
 
 CREATE OR REPLACE PROCEDURE store.create_cart(OUT "id" INTEGER, items JSON DEFAULT NULL)
-LANGUAGE plpgsql AS
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
 $$
 BEGIN
 	INSERT INTO store.cart(last_modified)
@@ -72,7 +75,8 @@ END;
 $$;
 
 CREATE OR REPLACE PROCEDURE store.update_cart_lock("id" INTEGER, "lock" BOOLEAN)
-LANGUAGE plpgsql AS
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
 $$
 BEGIN
 	UPDATE store.cart
@@ -88,7 +92,8 @@ $$;
 CREATE OR REPLACE PROCEDURE store.create_order(order_cart_id INTEGER, order_location_id SMALLINT, 
 	order_pickup_time_id SMALLINT, order_pickup_date DATE, order_payment_processor SMALLINT, OUT "id" INTEGER,
 	customer_info JSON DEFAULT NULL, order_account_id INTEGER DEFAULT NULL, order_user_info_id INTEGER DEFAULT NULL)
-LANGUAGE plpgsql AS
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
 $$
 DECLARE customer_info_id INTEGER;
 BEGIN
@@ -112,7 +117,8 @@ END;
 $$;
 
 CREATE OR REPLACE PROCEDURE store.confirm_order(confirm_order_id INTEGER, order_subtotal NUMERIC(6,2), order_tax NUMERIC(5,2), order_total NUMERIC(6,2), order_payment_uid TEXT)
-LANGUAGE plpgsql AS
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
 $$
 DECLARE order_cart_id INTEGER;
 BEGIN
@@ -143,7 +149,8 @@ $$;
 
 --ACCOUNT PROCEDURES
 CREATE OR REPLACE PROCEDURE store.create_account(user_email TEXT, OUT "id" INTEGER, user_info JSON DEFAULT NULL)
-LANGUAGE plpgsql AS
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
 $$
 BEGIN
 	INSERT INTO store.account(email)
@@ -157,7 +164,8 @@ END;
 $$;
 
 CREATE OR REPLACE PROCEDURE store.create_user_info(user_first_name TEXT, user_last_name TEXT, user_phone_number TEXT, user_account_id INTEGER)
-LANGUAGE plpgsql AS
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
 $$
 DECLARE "id" INTEGER;
 BEGIN
@@ -173,7 +181,8 @@ $$;
 
 --Menu Procedures
 CREATE OR REPLACE PROCEDURE store.modify_menu_item(item_name TEXT, item_price NUMERIC(4,2), item_image TEXT, item_description TEXT, OUT new_id SMALLINT, item_grouping_id SMALLINT DEFAULT NULL, item_id SMALLINT DEFAULT NULL)
-LANGUAGE plpgsql AS
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
 $$
 BEGIN
 	IF item_id IS NOT NULL THEN
@@ -192,7 +201,8 @@ END;
 $$;
 --{menu_item_id: SMALLINT, extra_group_id: SMALLINT, remove: boolean}
 CREATE OR REPLACE PROCEDURE store.update_item_extras(item_info JSON)
-LANGUAGE plpgsql AS
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
 $$
 DECLARE json_array JSON[] := ARRAY(SELECT json_array_elements(item_info));
 DECLARE json_value JSON;

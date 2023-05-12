@@ -13,7 +13,8 @@ CREATE TYPE store.menu_items AS (
 --Fetches all of the items within a category (or all items if no category)
 CREATE OR REPLACE FUNCTION store.fetch_menu_items(category TEXT DEFAULT NULL, subcategory TEXT DEFAULT NULL)
 RETURNS SETOF store.menu_items
-LANGUAGE plpgsql AS
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
 $func$
 BEGIN
 	IF (category IS NULL) THEN
@@ -41,7 +42,8 @@ $func$;
 --Fetches the specific items within a grouping
 CREATE OR REPLACE FUNCTION store.fetch_grouping_items(grouping_name TEXT)
 RETURNS SETOF store.menu_items
-LANGUAGE plpgsql AS
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
 $func$
 BEGIN
 	RETURN QUERY
@@ -67,7 +69,8 @@ DROP FUNCTION IF EXISTS store.fetch_categories;
 --Fetches the various groupings and displays them like a menu item
 CREATE OR REPLACE FUNCTION store.fetch_groupings()
 RETURNS TABLE ( name TEXT, image TEXT, price numeric(4,2))
-LANGUAGE plpgsql AS
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
 $func$
 BEGIN
 	RETURN QUERY
@@ -79,7 +82,8 @@ $func$;
 
 CREATE OR REPLACE FUNCTION store.fetch_grouping_names()
 RETURNS TABLE (names TEXT[])
-LANGUAGE plpgsql AS
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
 $func$
 BEGIN
 	RETURN QUERY
@@ -92,7 +96,8 @@ $func$;
 --Fetches the details of a menu item
 CREATE OR REPLACE FUNCTION store.fetch_item_details(item_name TEXT)
 RETURNS TABLE (name TEXT, id SMALLINT, price NUMERIC(4,2), image TEXT, description TEXT, group_price NUMERIC(4,2), group_name TEXT, group_size SMALLINT, extras JSON)
-LANGUAGE plpgsql AS
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
 $func$
 BEGIN
 	RETURN QUERY
@@ -115,7 +120,8 @@ $func$;
 
 CREATE OR REPLACE FUNCTION store.fetch_group_item_details(g_name TEXT)
 RETURNS TABLE (name TEXT, id SMALLINT, price NUMERIC(4,2), image TEXT, description TEXT, group_price NUMERIC(4,2), group_name TEXT, group_size SMALLINT, extras JSON)
-LANGUAGE plpgsql AS
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
 $func$
 BEGIN
 	RETURN QUERY
@@ -138,7 +144,8 @@ $func$;
 
 CREATE OR REPLACE FUNCTION store.fetch_group_info(g_name TEXT)
 RETURNS TABLE (name TEXT, price NUMERIC(4,2), size SMALLINT)
-LANGUAGE plpgsql AS
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
 $func$
 BEGIN
 	RETURN QUERY
@@ -150,7 +157,8 @@ $func$;
 
 CREATE OR REPLACE FUNCTION store.fetch_menu_names()
 RETURNS TABLE (name TEXT)
-LANGUAGE plpgsql AS
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
 $func$
 BEGIN
 	RETURN QUERY
@@ -165,7 +173,8 @@ $func$;
 CREATE OR REPLACE FUNCTION store.view_cart(user_cart_id INTEGER)
 RETURNS TABLE (unit_price NUMERIC(4,2), cart_item_id INTEGER, menu_item_id SMALLINT, amount INTEGER, name TEXT, image TEXT, group_name TEXT, 
 			  group_size SMALLINT, group_price NUMERIC(4,2), extra_info JSON)
-LANGUAGE plpgsql AS
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
 $func$
 BEGIN
 	RETURN QUERY
@@ -180,23 +189,28 @@ BEGIN
 	FROM store.cart_item CI
 	JOIN store.menu_item MI ON MI.menu_item_id = CI.menu_item_id
 	LEFT JOIN store.grouping G ON G.grouping_id = MI.grouping_id
-	WHERE CI.cart_id = user_cart_id;
+	WHERE CI.cart_id = user_cart_id
+	ORDER BY CI.cart_item_id ASC;
 END;
 $func$;
 
-CREATE OR REPLACE FUNCTION store.check_cart_process(user_cart_id INTEGER, OUT status TEXT)
-RETURNS TEXT
-LANGUAGE plpgsql AS
+CREATE OR REPLACE FUNCTION store.check_cart_process(user_cart_id INTEGER)
+RETURNS TABLE (status TEXT)
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
 $func$
 BEGIN
 	IF (SELECT C.is_locked FROM store.cart C WHERE C.cart_id = user_cart_id) THEN
 		IF (SELECT O.is_verified FROM store.order O WHERE O.cart_id = user_cart_id) THEN
-			status := 'Complete';
+			RETURN QUERY
+			SELECT 'Complete' AS status;
 		ELSE
-			status := 'Pending';
+			RETURN QUERY
+			SELECT 'Pending' AS status;
 		END IF;
 	ELSE
-		status := 'Open';
+		RETURN QUERY
+		SELECT 'Open' AS status;
 	END IF;
 END;
 $func$;
@@ -205,7 +219,8 @@ $func$;
 --Checkout Functions
 CREATE OR REPLACE FUNCTION store.get_checkout_info()
 RETURNS TABLE (locations JSON, pickup_times JSON)
-LANGUAGE plpgsql AS
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
 $func$
 BEGIN
 	RETURN QUERY
@@ -219,7 +234,8 @@ $func$;
 
 CREATE OR REPLACE FUNCTION store.get_cart_availability(user_cart_id INTEGER)
 RETURNS TABLE (available_weekdays JSON[], available_daterange JSON[])
-LANGUAGE plpgsql AS
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
 $func$
 BEGIN
 	RETURN QUERY
@@ -243,7 +259,8 @@ $func$;
 --Category Functions
 CREATE OR REPLACE FUNCTION store.fetch_categories()
 RETURNS TABLE (category TEXT, subcategories TEXT[])
-LANGUAGE plpgsql AS
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
 $func$
 BEGIN
 	RETURN QUERY
