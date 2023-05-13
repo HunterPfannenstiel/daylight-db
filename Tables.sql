@@ -129,6 +129,7 @@ CREATE TABLE IF NOT EXISTS store.item_category
 (
     item_category_id smallserial NOT NULL,
     name text NOT NULL,
+	display_order smallint,
     is_active boolean NOT NULL DEFAULT true,
     PRIMARY KEY (item_category_id),
     UNIQUE (name)

@@ -132,7 +132,7 @@ BEGIN
 		FROM store.menu_item MI
 		LEFT JOIN store.item_extra_group IEG ON IEG.menu_item_id = MI.menu_item_id
 		LEFT JOIN store.extra_group_extra EGE ON EGE.extra_group_id = IEG.extra_group_id
-		LEFT JOIN store.extra E ON E.extra_id = EGE.extra_id
+		LEFT JOIN store.extra E ON E.extra_id = EGE.extra_id AND E.price IS NULL
 		LEFT JOIN store.extra_category EC ON EC.extra_category_id = E.extra_category_id
 		JOIN store.grouping G ON G.grouping_id = MI.grouping_id
 		WHERE G.name = g_name
@@ -269,6 +269,7 @@ BEGIN
 	LEFT JOIN store.item_subcategory ISC ON ISC.item_category_id = IC.item_category_id
 		AND ISC.is_active = true
 	WHERE IC.is_active = true
-	GROUP BY IC.name;
+	GROUP BY IC.name, IC.display_order
+	ORDER BY IC.display_order ASC;
 END;
 $func$;

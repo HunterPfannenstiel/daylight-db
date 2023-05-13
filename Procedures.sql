@@ -1,9 +1,11 @@
 DROP TYPE IF EXISTS store.new_cart_item;
+DROP TYPE IF EXISTS store.customer_info_t;
 DROP PROCEDURE IF EXISTS store.check_cart_lock;
 DROP PROCEDURE IF EXISTS store.update_cart;
 DROP PROCEDURE IF EXISTS store.create_cart;
 DROP PROCEDURE IF EXISTS store.update_cart_lock;
 DROP PROCEDURE IF EXISTS store.create_order;
+DROP PROCEDURE IF EXISTS store.insert_customer_order_info;
 DROP PROCEDURE IF EXISTS store.confirm_order;
 DROP PROCEDURE IF EXISTS store.create_user_info;
 DROP PROCEDURE IF EXISTS store.create_account;
@@ -15,6 +17,13 @@ CREATE TYPE store.new_cart_item AS (
 	menu_item_id SMALLINT,
 	amount INTEGER,
 	extra_ids SMALLINT[]
+);
+
+CREATE TYPE store.customer_info_t AS (
+	first_name TEXT,
+	last_name TEXT,
+	email TEXT,
+	phone_number TEXT
 );
 --CART PROCEDURES
 CREATE OR REPLACE PROCEDURE store.check_cart_lock("id" INTEGER)
@@ -97,22 +106,68 @@ SECURITY DEFINER AS
 $$
 DECLARE customer_info_id INTEGER;
 BEGIN
-	CALL store.check_cart_lock(order_cart_id);
-	IF customer_info IS NOT NULL THEN
-		INSERT INTO store.customer_order_info(first_name, last_name, email, phone_number)
-		VALUES(customer_info->>'first_name', customer_info->>'last_name', customer_info->>'email', customer_info->>'phone_number')
-		RETURNING customer_order_info_id INTO customer_info_id;
-		
-		INSERT INTO store.order(cart_id, customer_order_info_id, location_id, pickup_time_id, pickup_date, payment_processor_id, account_id)
-		VALUES(order_cart_id, customer_info_id, order_location_id, order_pickup_time_id, order_pickup_date, order_payment_processor, order_account_id)
-		RETURNING order_id INTO "id";
+	IF(SELECT C.is_locked FROM store.cart C WHERE C.cart_id = order_cart_id) THEN --Card details failed and retrying, check if new user info was given	
+		IF customer_info IS NOT NULL THEN
+			SELECT O.customer_order_info_id INTO customer_info_id FROM store.order O WHERE O.cart_id = order_cart_id;
+			IF customer_info_id IS NOT NULL THEN
+				UPDATE store.customer_order_info COI
+					SET COI.first_name = CI.first_name,
+					COI.last_name = CI.last_name,
+					COI.email = CI.email,
+					COI.phone_number = CI.phone_number
+				FROM 
+				(SELECT * FROM JSON_POPULATE_RECORDSET(NULL::store.customer_info_t, customer_info)) CI
+				WHERE COI.customer_order_info_id = customer_info_id AND EXISTS (
+					SELECT COI.first_name, COI.last_name, COI.email, COI.phone_number
+					EXCEPT
+					SELECT CI.first_name, CI.last_name, CI.email, CI.phone_number
+				);
+			ELSE 
+				CALL store.insert_customer_order_info(customer_info, customer_info_id);
+			END IF;
+		UPDATE store.order O
+		SET O.customer_order_info_id = CI.CII,
+		O.location_id = CI.OLI,
+		O.pickup_time_id = CI.OPI,
+		O.pickup_date = CI.OPD,
+		O.payment_processor_id = CI.OPP,
+		O.account_id = CI.OAI,
+		O.user_info_id = CI.OUII
+		FROM (VALUES(customer_info_id, order_location_id, order_pickup_id, order_pickup_date, order_payment_processor_id, order_account_id, order_user_info_id)) AS
+			 CI(CII, OLI, OPI, OPD, OPP, OAI, OUII)
+		WHERE cart_id = order_cart_id AND EXISTS
+		(
+			SELECT O.customer_order_info_id, O.location_id, O.pickup_time_id, O.pickup_date, O.payment_processor_id, O.account_id, O.user_info_id
+			EXCEPT
+			SELECT CI.CII, CI.OLI, CI.OPI, CI.OPD, CI.OPP, CI.OAI, CI.OUII
+		);
+		END IF;
+		--Check if order_user_info was given, if so update
+		--Else check if customer_info remains the same as the old
 	ELSE
-		INSERT INTO store.order(cart_id, location_id, pickup_time_id, pickup_date, payment_processor_id, account_id, user_info_id)
-		VALUES(order_cart_id, order_location_id, order_pickup_time_id, order_pickup_date, order_payment_processor, order_account_id, order_user_info_id)
-		RETURNING order_id INTO "id";
-	END IF;
-		
+		IF customer_info IS NOT NULL THEN
+			CALL store.insert_customer_order_info(customer_info, customer_info_id);
+
+			INSERT INTO store.order(cart_id, customer_order_info_id, location_id, pickup_time_id, pickup_date, payment_processor_id, account_id)
+			VALUES(order_cart_id, customer_info_id, order_location_id, order_pickup_time_id, order_pickup_date, order_payment_processor, order_account_id)
+			RETURNING order_id INTO "id";
+		ELSE
+			INSERT INTO store.order(cart_id, location_id, pickup_time_id, pickup_date, payment_processor_id, account_id, user_info_id)
+			VALUES(order_cart_id, order_location_id, order_pickup_time_id, order_pickup_date, order_payment_processor, order_account_id, order_user_info_id)
+			RETURNING order_id INTO "id";
+		END IF;
 	CALL store.update_cart_lock(order_cart_id, true);
+	END IF;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE store.insert_customer_order_info(customer_info JSON, OUT customer_id INTEGER)
+LANGUAGE plpgsql AS
+$$
+BEGIN
+	INSERT INTO store.customer_order_info(first_name, last_name, email, phone_number)
+	VALUES(customer_info->>'first_name', customer_info->>'last_name', customer_info->>'email', customer_info->>'phone_number')
+	RETURNING customer_order_info_id INTO customer_id;
 END;
 $$;
 

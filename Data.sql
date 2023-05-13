@@ -37,10 +37,10 @@ INSERT INTO store.menu_item (name, price, image, description, grouping_id) VALUE
 
 ALTER SEQUENCE store.item_category_item_category_id_seq RESTART WITH 1;
 
-INSERT INTO store.item_category (name) VALUES 
-('Donuts'),
-('Savory'),
-('Featured');
+INSERT INTO store.item_category (name, display_order) VALUES 
+('Donuts', 1),
+('Savory', 2),
+('Featured', 3);
 
 ALTER SEQUENCE store.item_subcategory_item_subcategory_id_seq RESTART WITH 1;
 
@@ -70,7 +70,12 @@ INSERT INTO store.menu_item_category (item_category_id, menu_item_id) VALUES
 (2, 17), 
 (2, 18), 
 (2, 19), 
-(2, 20);
+(2, 20),
+
+(3, 1),
+(3, 15),
+(3, 20),
+(3, 21);
 
 INSERT INTO store.menu_item_subcategory (item_subcategory_id, menu_item_id) VALUES 
 (1, 1), 
