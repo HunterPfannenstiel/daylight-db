@@ -109,12 +109,12 @@ BEGIN
 	IF(SELECT C.is_locked FROM store.cart C WHERE C.cart_id = order_cart_id) THEN --Card details failed and retrying, check if new user info was given	
 		IF customer_info IS NOT NULL THEN
 			SELECT O.customer_order_info_id INTO customer_info_id FROM store.order O WHERE O.cart_id = order_cart_id;
-			IF customer_info_id IS NOT NULL THEN
+			IF customer_info_id IS NOT NULL THEN --There was a previous customer_order_info
 				UPDATE store.customer_order_info COI
-					SET COI.first_name = CI.first_name,
-					COI.last_name = CI.last_name,
-					COI.email = CI.email,
-					COI.phone_number = CI.phone_number
+					SET first_name = CI.first_name,
+					last_name = CI.last_name,
+					email = CI.email,
+					phone_number = CI.phone_number
 				FROM 
 				(SELECT * FROM JSON_POPULATE_RECORDSET(NULL::store.customer_info_t, customer_info)) CI
 				WHERE COI.customer_order_info_id = customer_info_id AND EXISTS (
@@ -122,18 +122,18 @@ BEGIN
 					EXCEPT
 					SELECT CI.first_name, CI.last_name, CI.email, CI.phone_number
 				);
-			ELSE 
+			ELSE  --There wasn't a previous customer_order_info but now there is
 				CALL store.insert_customer_order_info(customer_info, customer_info_id);
 			END IF;
 		UPDATE store.order O
-		SET O.customer_order_info_id = CI.CII,
-		O.location_id = CI.OLI,
-		O.pickup_time_id = CI.OPI,
-		O.pickup_date = CI.OPD,
-		O.payment_processor_id = CI.OPP,
-		O.account_id = CI.OAI,
-		O.user_info_id = CI.OUII
-		FROM (VALUES(customer_info_id, order_location_id, order_pickup_id, order_pickup_date, order_payment_processor_id, order_account_id, order_user_info_id)) AS
+		SET customer_order_info_id = CI.CII,
+		location_id = CI.OLI,
+		pickup_time_id = CI.OPI,
+		pickup_date = CI.OPD,
+		payment_processor_id = CI.OPP,
+		account_id = CI.OAI,
+		user_info_id = CI.OUII
+		FROM (VALUES(customer_info_id, order_location_id, order_pickup_time_id, order_pickup_date, order_payment_processor, order_account_id, order_user_info_id)) AS
 			 CI(CII, OLI, OPI, OPD, OPP, OAI, OUII)
 		WHERE cart_id = order_cart_id AND EXISTS
 		(
