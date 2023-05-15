@@ -21,6 +21,7 @@ DROP TABLE IF EXISTS store.extra;
 DROP TABLE IF EXISTS store.extra_category;
 DROP TABLE IF EXISTS store.item_range_availability;
 DROP TABLE IF EXISTS store.range_availability;
+DROP TABLE IF EXISTS store.tax;
 DROP FUNCTION IF EXISTS store.fetch_grouping_items;
 DROP FUNCTION IF EXISTS store.fetch_menu_items;
 DROP VIEW IF EXISTS store.vw_menu_item_details;
@@ -268,6 +269,12 @@ CREATE TABLE IF NOT EXISTS store.payment_processor
     payment_processor_id smallserial NOT NULL,
     payment_processor text NOT NULL,
     PRIMARY KEY (payment_processor_id)
+);
+
+CREATE TABLE IF NOT EXISTS store.tax
+(
+	tax_amount numeric(3,3) NOT NULL,
+	PRIMARY KEY (tax_amount)
 );
 
 ALTER TABLE IF EXISTS store."order"

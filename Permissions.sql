@@ -20,6 +20,8 @@ GRANT EXECUTE ON FUNCTION store.get_checkout_info() TO daylight_user;
 GRANT EXECUTE ON FUNCTION store.view_cart(user_cart_id integer) TO daylight_user;
 
 GRANT EXECUTE ON FUNCTION store.fetch_categories() TO daylight_user;
+
+GRANT EXECUTE ON FUNCTION store.fetch_totaling_cart(user_cart_id integer) TO daylight_user;
 --
 
 --Procedure Permissions

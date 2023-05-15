@@ -62,6 +62,7 @@ DROP FUNCTION IF EXISTS store.view_cart;
 DROP FUNCTION IF EXISTS store.check_cart_process;
 DROP FUNCTION IF EXISTS store.get_checkout_info;
 DROP FUNCTION IF EXISTS store.get_cart_availability;
+DROP FUNCTION IF EXISTS store.fetch_totaling_cart;
 DROP FUNCTION IF EXISTS store.fetch_group_info;
 DROP FUNCTION IF EXISTS store.fetch_menu_names;
 DROP FUNCTION IF EXISTS store.fetch_categories;
@@ -252,6 +253,34 @@ BEGIN
 	JOIN store.item_range_availability IRA ON IRA.menu_item_id = CI.menu_item_id
 	JOIN store.range_availability RA ON RA.range_availability_id = IRA.range_availability_id
 	WHERE CI.cart_id = user_cart_id) t2;
+END;
+$func$;
+
+CREATE OR REPLACE FUNCTION store.fetch_totaling_cart(user_cart_id INTEGER)
+RETURNS TABLE (cart JSON, tax_amount NUMERIC(3,3))
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT json_agg(t2) cart, tax.tax_amount
+	FROM(
+		SELECT t1.price, t1.size, array_agg(ARRAY[t1.unit_price + t1.extra_price, t1."count"]) AS items, SUM(t1."count") AS total_items
+		FROM(
+			SELECT CASE WHEN E.price > 0 THEN NULL ELSE G.price END, CASE WHEN E.price > 0 THEN NULL ELSE G.size END, CASE WHEN E.price > 0 THEN NULL ELSE G.grouping_id END, 
+				MI.price unit_price, SUM(COALESCE(E.price, 0)) extra_price, SUM(CI.amount) "count"
+			FROM store.cart_item CI
+			JOIN store.menu_item MI ON MI.menu_item_id = CI.menu_item_id
+			LEFT JOIN store.grouping G ON G.grouping_id = MI.grouping_id
+			LEFT JOIN store.cart_extra CE ON CE.cart_item_id = CI.cart_item_id AND CE.cart_id = CI.cart_id
+			LEFT JOIN store.extra E ON E.extra_id = CE.extra_id
+			WHERE CI.cart_id = user_cart_id
+			GROUP BY MI.price, G.grouping_id, E.price
+		) t1
+		GROUP BY t1.price, t1.size
+	) t2
+	CROSS JOIN store.tax
+	GROUP BY tax.tax_amount;
 END;
 $func$;
 --END OF CHECKOUT FUNCTIONS

@@ -276,3 +276,6 @@ VALUES('5:00 AM'), ('5:30 AM'),
 ('10:00 AM'), ('10:30 AM'),
 ('11:00 AM'), ('11:30 AM'),
 ('12:00 PM');
+
+INSERT INTO store.tax(tax_amount)
+VALUES(.08);
