@@ -71,6 +71,7 @@ CREATE TABLE IF NOT EXISTS store.cart
     cart_id serial NOT NULL,
     last_modified timestamp without time zone DEFAULT current_timestamp NOT NULL,
     is_locked boolean NOT NULL DEFAULT false,
+	stripe_uid text,
     PRIMARY KEY (cart_id)
 );
 

@@ -63,6 +63,8 @@ DROP FUNCTION IF EXISTS store.check_cart_process;
 DROP FUNCTION IF EXISTS store.get_checkout_info;
 DROP FUNCTION IF EXISTS store.get_cart_availability;
 DROP FUNCTION IF EXISTS store.fetch_totaling_cart;
+DROP FUNCTION IF EXISTS store.retrieve_stripe_id;
+DROP FUNCTION IF EXISTS store.fetch_paypal_order_items;
 DROP FUNCTION IF EXISTS store.fetch_group_info;
 DROP FUNCTION IF EXISTS store.fetch_menu_names;
 DROP FUNCTION IF EXISTS store.fetch_categories;
@@ -218,6 +220,7 @@ $func$;
 --END OF CART FUNCTIONS
 
 --Checkout Functions
+CREATE OR REPLACE FUNCTION store.check
 CREATE OR REPLACE FUNCTION store.get_checkout_info()
 RETURNS TABLE (locations JSON, pickup_times JSON)
 LANGUAGE plpgsql 
@@ -283,6 +286,39 @@ BEGIN
 	GROUP BY tax.tax_amount;
 END;
 $func$;
+
+CREATE OR REPLACE FUNCTION store.retrieve_stripe_id(user_cart_id INTEGER)
+RETURNS TABLE (payment_uid TEXT)
+LANGUAGE plpgsql
+SECURITY DEFINER AS
+$func$
+BEGIN
+	CALL store.check_order_verification(user_cart_id);
+	RETURN QUERY
+	SELECT O.payment_uid 
+	FROM store.order O
+	WHERE O.cart_id = user_cart_id;
+END;
+$func$;
+
+CREATE OR REPLACE FUNCTION store.fetch_paypal_order_items(user_cart_id INTEGER)
+RETURNS TABLE (name TEXT, price NUMERIC(4,2), amount INTEGER, extras JSON[])
+LANGUAGE plpgsql
+SECURITY DEFINER AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT MI.name, MI.price, CI.amount, array_agg(json_build_object('category', EC.name, 'extra', E.name)) AS extras
+	FROM store.cart_item CI
+	JOIN store.menu_item MI ON MI.menu_item_id = CI.menu_item_id
+	LEFT JOIN store.cart_extra CE ON CE.cart_item_id = CI.cart_item_id AND CE.cart_id = CI.cart_id
+	LEFT JOIN store.extra E ON E.extra_id = CE.extra_id
+	LEFT JOIN store.extra_category EC ON EC.extra_category_id = E.extra_category_id
+	WHERE CI.cart_id = user_cart_id
+	GROUP BY MI.name, MI.price, CI.amount;
+END;
+$func$;
+
 --END OF CHECKOUT FUNCTIONS
 
 --Category Functions

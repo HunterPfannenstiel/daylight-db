@@ -4,6 +4,8 @@ DROP PROCEDURE IF EXISTS store.check_cart_lock;
 DROP PROCEDURE IF EXISTS store.update_cart;
 DROP PROCEDURE IF EXISTS store.create_cart;
 DROP PROCEDURE IF EXISTS store.update_cart_lock;
+DROP PROCEDURE IF EXISTS store.insert_stripe_uid;
+DROP PROCEDURE IF EXISTS store.check_order_verification;
 DROP PROCEDURE IF EXISTS store.create_order;
 DROP PROCEDURE IF EXISTS store.insert_customer_order_info;
 DROP PROCEDURE IF EXISTS store.confirm_order;
@@ -93,9 +95,34 @@ BEGIN
 	WHERE cart_id = "id";
 END;
 $$;
+
+CREATE OR REPLACE PROCEDURE store.insert_stripe_uid(user_cart_id INTEGER, stripe_id TEXT)
+LANGUAGE plpgsql
+SECURITY DEFINER AS
+$$
+BEGIN
+	CALL store.check_order_verification(user_cart_id);
+	UPDATE store.cart
+	SET stripe_uid = stripe_id
+	WHERE cart_id = user_cart_id;
+END;
+$$;
+
 --END OF CART PROCEDURES
 
 --ORDER PROCEDURES
+CREATE OR REPLACE PROCEDURE store.check_order_verification(user_cart_id INTEGER)
+LANGUAGE plpgsql
+SECURITY DEFINER AS
+$$
+BEGIN
+	IF EXISTS(SELECT O.order_id FROM store.order O WHERE O.cart_id = user_cart_id AND O.is_verified = true) THEN
+		RAISE EXCEPTION 'This cart already has a verified order, please create a new cart.';
+	END IF;
+END;
+$$;
+
+SELECT * FROM store.order;
 	--customer_info - If customer doesn't have an account, this needs to be provided
 	--order_user_info_id - If the customer has an account, this can be provided instead of 'customer_info'
 CREATE OR REPLACE PROCEDURE store.create_order(order_cart_id INTEGER, order_location_id SMALLINT, 

@@ -22,6 +22,8 @@ GRANT EXECUTE ON FUNCTION store.view_cart(user_cart_id integer) TO daylight_user
 GRANT EXECUTE ON FUNCTION store.fetch_categories() TO daylight_user;
 
 GRANT EXECUTE ON FUNCTION store.fetch_totaling_cart(user_cart_id integer) TO daylight_user;
+
+GRANT EXECUTE ON FUNCTION store.retrieve_stripe_id(user_cart_id integer) TO daylight_user;
 --
 
 --Procedure Permissions
@@ -36,6 +38,10 @@ GRANT EXECUTE ON PROCEDURE store.create_order(IN order_cart_id integer, IN order
 GRANT EXECUTE ON PROCEDURE store.create_user_info(IN user_first_name text, IN user_last_name text, IN user_phone_number text, IN user_account_id integer) TO daylight_user;
 
 GRANT EXECUTE ON PROCEDURE store.update_cart(IN id integer, IN items json) TO daylight_user;
+
+GRANT EXECUTE ON PROCEDURE store.check_order_verification(user_cart_id integer) TO daylight_user;
+
+GRANT EXECUTE ON PROCEDURE store.insert_stripe_uid(user_cart_id integer, stripe_id text) TO daylight_user;
 --
 
 --View Permissions
