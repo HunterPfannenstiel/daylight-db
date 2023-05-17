@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS store."order"
     location_id smallint NOT NULL,
     pickup_time_id smallint NOT NULL,
     pickup_date date NOT NULL,
-    payment_processor_id smallint NOT NULL,
+    payment_processor_id smallint,
     is_printed boolean NOT NULL DEFAULT false,
     is_verified boolean NOT NULL DEFAULT false,
     is_error boolean NOT NULL DEFAULT false,

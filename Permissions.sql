@@ -7,8 +7,6 @@ GRANT EXECUTE ON FUNCTION store.fetch_grouping_items(grouping_name text) TO dayl
 
 GRANT EXECUTE ON FUNCTION store.fetch_groupings() TO daylight_user;
 
-GRANT EXECUTE ON FUNCTION store.fetch_groupings(grouping_name text) TO daylight_user;
-
 GRANT EXECUTE ON FUNCTION store.fetch_item_details(item_name text) TO daylight_user;
 
 GRANT EXECUTE ON FUNCTION store.fetch_menu_items(category text, subcategory text) TO daylight_user;
@@ -24,6 +22,8 @@ GRANT EXECUTE ON FUNCTION store.fetch_categories() TO daylight_user;
 GRANT EXECUTE ON FUNCTION store.fetch_totaling_cart(user_cart_id integer) TO daylight_user;
 
 GRANT EXECUTE ON FUNCTION store.retrieve_stripe_id(user_cart_id integer) TO daylight_user;
+
+GRANT EXECUTE ON FUNCTION store.fetch_paypal_order_items(user_cart_id integer) TO daylight_user;
 --
 
 --Procedure Permissions
