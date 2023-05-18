@@ -321,8 +321,6 @@ BEGIN
 	GROUP BY MI.name, MI.price, CI.amount;
 END;
 $func$;
-SELECT * FROM store.fetch_paypal_order_items(5)
-SELECT * FROM store.fetch_totaling_cart(5)
 --END OF CHECKOUT FUNCTIONS
 
 --Category Functions
