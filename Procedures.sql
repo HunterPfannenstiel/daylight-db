@@ -156,7 +156,6 @@ BEGIN
 		location_id = CI.OLI,
 		pickup_time_id = CI.OPI,
 		pickup_date = CI.OPD,
-		payment_processor_id = CI.OPP,
 		account_id = CI.OAI,
 		user_info_id = CI.OUII
 		FROM (VALUES(customer_info_id, order_location_id, order_pickup_time_id, order_pickup_date, order_account_id, order_user_info_id)) AS
@@ -186,13 +185,16 @@ BEGIN
 	END IF;
 END;
 $$;
-
+CALL store.create_order(8::INTEGER, 1::SMALLINT, 1::SMALLINT, '2023-05-12'::DATE, NULL::INTEGER, '[{"first_name": "Test", "last_name": "Tester", "email": "test@gmail.com", "phone_number": "(620) 003-2332"}]'::JSON,
+      null::INTEGER,
+      null::INTEGER)
+SELECT * FROM store.order O JOIN store.customer_order_info COI ON COI.customer_order_info_id = O.customer_order_info_id WHERE cart_id = 9
 CREATE OR REPLACE PROCEDURE store.insert_customer_order_info(customer_info JSON, OUT customer_id INTEGER)
 LANGUAGE plpgsql AS
 $$
 BEGIN
 	INSERT INTO store.customer_order_info(first_name, last_name, email, phone_number)
-	VALUES(customer_info->>'first_name', customer_info->>'last_name', customer_info->>'email', customer_info->>'phone_number')
+	VALUES((customer_info->0)->>'first_name', (customer_info->0)->>'last_name', (customer_info->0)->>'email', (customer_info->0)->>'phone_number')
 	RETURNING customer_order_info_id INTO customer_id;
 END;
 $$;
