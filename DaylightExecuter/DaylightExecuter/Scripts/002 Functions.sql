@@ -1,15 +1,3 @@
---Created in the 'Tables' file because the view needs to be dropped before the menu_item table can be dropped
-CREATE VIEW store.vw_menu_item_details AS 
-	SELECT MI.name, MI.image, MI.price, MI.menu_item_id, MI.is_active
-	FROM Store.menu_item MI
-	WHERE MI.is_active = true;
-	
-CREATE TYPE store.menu_items AS (
-	name TEXT,
-	image TEXT,
-	price numeric(4, 2)
-);
-
 --Fetches all of the items within a category (or all items if no category)
 CREATE OR REPLACE FUNCTION store.fetch_menu_items(category TEXT DEFAULT NULL, subcategory TEXT DEFAULT NULL)
 RETURNS SETOF store.menu_items
@@ -59,6 +47,7 @@ DROP FUNCTION IF EXISTS store.fetch_grouping_names;
 DROP FUNCTION IF EXISTS store.fetch_item_details;
 DROP FUNCTION IF EXISTS store.fetch_group_item_details;
 DROP FUNCTION IF EXISTS store.view_cart;
+DROP FUNCTION IF EXISTS store.view_account_orders;
 DROP FUNCTION IF EXISTS store.check_cart_process;
 DROP FUNCTION IF EXISTS store.get_checkout_info;
 DROP FUNCTION IF EXISTS store.get_cart_availability;
@@ -197,6 +186,25 @@ BEGIN
 END;
 $func$;
 
+CREATE OR REPLACE FUNCTION store.view_account_orders(user_account_id INTEGER)
+RETURNS TABLE (cart_id INTEGER, cart JSON)
+LANGUAGE plpgsql
+SECURITY DEFINER AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT C.cart_id AS cart_id,
+	(
+		SELECT json_agg(CI) 
+		FROM store.view_cart(C.cart_id) CI
+	) AS cart
+	FROM store.cart C
+	JOIN store.order O ON C.cart_id = O.cart_id
+	WHERE O.account_id = user_account_id
+	ORDER BY O.created_on ASC;
+END;
+$func$;
+
 CREATE OR REPLACE FUNCTION store.check_cart_process(user_cart_id INTEGER)
 RETURNS TABLE (status TEXT)
 LANGUAGE plpgsql 
@@ -220,7 +228,6 @@ $func$;
 --END OF CART FUNCTIONS
 
 --Checkout Functions
-CREATE OR REPLACE FUNCTION store.check
 CREATE OR REPLACE FUNCTION store.get_checkout_info()
 RETURNS TABLE (locations JSON, pickup_times JSON)
 LANGUAGE plpgsql 

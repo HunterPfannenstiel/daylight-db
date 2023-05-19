@@ -7,8 +7,6 @@ GRANT EXECUTE ON FUNCTION store.fetch_grouping_items(grouping_name text) TO dayl
 
 GRANT EXECUTE ON FUNCTION store.fetch_groupings() TO daylight_user;
 
-GRANT EXECUTE ON FUNCTION store.fetch_groupings(grouping_name text) TO daylight_user;
-
 GRANT EXECUTE ON FUNCTION store.fetch_item_details(item_name text) TO daylight_user;
 
 GRANT EXECUTE ON FUNCTION store.fetch_menu_items(category text, subcategory text) TO daylight_user;
