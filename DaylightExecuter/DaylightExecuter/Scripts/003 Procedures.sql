@@ -122,11 +122,10 @@ BEGIN
 END;
 $$;
 
-SELECT * FROM store.order;
 	--customer_info - If customer doesn't have an account, this needs to be provided
 	--order_user_info_id - If the customer has an account, this can be provided instead of 'customer_info'
 CREATE OR REPLACE PROCEDURE store.create_order(order_cart_id INTEGER, order_location_id SMALLINT, 
-	order_pickup_time_id SMALLINT, order_pickup_date DATE, order_payment_processor SMALLINT, OUT "id" INTEGER,
+	order_pickup_time_id SMALLINT, order_pickup_date DATE, OUT "id" INTEGER,
 	customer_info JSON DEFAULT NULL, order_account_id INTEGER DEFAULT NULL, order_user_info_id INTEGER DEFAULT NULL)
 LANGUAGE plpgsql 
 SECURITY DEFINER AS
@@ -160,13 +159,13 @@ BEGIN
 		payment_processor_id = CI.OPP,
 		account_id = CI.OAI,
 		user_info_id = CI.OUII
-		FROM (VALUES(customer_info_id, order_location_id, order_pickup_time_id, order_pickup_date, order_payment_processor, order_account_id, order_user_info_id)) AS
-			 CI(CII, OLI, OPI, OPD, OPP, OAI, OUII)
+		FROM (VALUES(customer_info_id, order_location_id, order_pickup_time_id, order_pickup_date, order_account_id, order_user_info_id)) AS
+			 CI(CII, OLI, OPI, OPD, OAI, OUII)
 		WHERE cart_id = order_cart_id AND EXISTS
 		(
-			SELECT O.customer_order_info_id, O.location_id, O.pickup_time_id, O.pickup_date, O.payment_processor_id, O.account_id, O.user_info_id
+			SELECT O.customer_order_info_id, O.location_id, O.pickup_time_id, O.pickup_date, O.account_id, O.user_info_id
 			EXCEPT
-			SELECT CI.CII, CI.OLI, CI.OPI, CI.OPD, CI.OPP, CI.OAI, CI.OUII
+			SELECT CI.CII, CI.OLI, CI.OPI, CI.OPD, CI.OAI, CI.OUII
 		);
 		END IF;
 		--Check if order_user_info was given, if so update
@@ -175,12 +174,12 @@ BEGIN
 		IF customer_info IS NOT NULL THEN
 			CALL store.insert_customer_order_info(customer_info, customer_info_id);
 
-			INSERT INTO store.order(cart_id, customer_order_info_id, location_id, pickup_time_id, pickup_date, payment_processor_id, account_id)
-			VALUES(order_cart_id, customer_info_id, order_location_id, order_pickup_time_id, order_pickup_date, order_payment_processor, order_account_id)
+			INSERT INTO store.order(cart_id, customer_order_info_id, location_id, pickup_time_id, pickup_date, account_id)
+			VALUES(order_cart_id, customer_info_id, order_location_id, order_pickup_time_id, order_pickup_date, order_account_id)
 			RETURNING order_id INTO "id";
 		ELSE
-			INSERT INTO store.order(cart_id, location_id, pickup_time_id, pickup_date, payment_processor_id, account_id, user_info_id)
-			VALUES(order_cart_id, order_location_id, order_pickup_time_id, order_pickup_date, order_payment_processor, order_account_id, order_user_info_id)
+			INSERT INTO store.order(cart_id, location_id, pickup_time_id, pickup_date, account_id, user_info_id)
+			VALUES(order_cart_id, order_location_id, order_pickup_time_id, order_pickup_date, order_account_id, order_user_info_id)
 			RETURNING order_id INTO "id";
 		END IF;
 	CALL store.update_cart_lock(order_cart_id, true);
@@ -198,14 +197,14 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE PROCEDURE store.confirm_order(confirm_order_id INTEGER, order_subtotal NUMERIC(6,2), order_tax NUMERIC(5,2), order_total NUMERIC(6,2), order_payment_uid TEXT)
+CREATE OR REPLACE PROCEDURE store.confirm_order(confirm_order_id INTEGER, order_subtotal NUMERIC(6,2), order_tax NUMERIC(5,2), order_total NUMERIC(6,2), order_payment_processor SMALLINT, order_payment_uid TEXT)
 LANGUAGE plpgsql 
 SECURITY DEFINER AS
 $$
 DECLARE order_cart_id INTEGER;
 BEGIN
 	UPDATE store.order
-	SET subtotal = order_subtotal, tax = order_tax, total_price = order_total, payment_uid = order_payment_uid,
+	SET subtotal = order_subtotal, tax = order_tax, total_price = order_total, payment_processor_id = order_payment_processor, payment_uid = order_payment_uid,
 		is_verified = true, is_error = false
 	WHERE order_id = confirm_order_id;
 	

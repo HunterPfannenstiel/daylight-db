@@ -273,22 +273,26 @@ SECURITY DEFINER AS
 $func$
 BEGIN
 	RETURN QUERY
-	SELECT json_agg(t2) cart, tax.tax_amount
+	SELECT json_agg(t3) cart, tax.tax_amount
 	FROM(
-		SELECT t1.price, t1.size, array_agg(ARRAY[t1.unit_price + t1.extra_price, t1."count"]) AS items, SUM(t1."count") AS total_items
+		SELECT t2.price, t2.size, array_agg(t2.items) AS items, SUM(t2.total_items) AS total_items
 		FROM(
-			SELECT CASE WHEN E.price > 0 THEN NULL ELSE G.price END, CASE WHEN E.price > 0 THEN NULL ELSE G.size END, CASE WHEN E.price > 0 THEN NULL ELSE G.grouping_id END, 
-				MI.price unit_price, SUM(COALESCE(E.price, 0)) extra_price, SUM(CI.amount) "count"
-			FROM store.cart_item CI
-			JOIN store.menu_item MI ON MI.menu_item_id = CI.menu_item_id
-			LEFT JOIN store.grouping G ON G.grouping_id = MI.grouping_id
-			LEFT JOIN store.cart_extra CE ON CE.cart_item_id = CI.cart_item_id AND CE.cart_id = CI.cart_id
-			LEFT JOIN store.extra E ON E.extra_id = CE.extra_id
-			WHERE CI.cart_id = user_cart_id
-			GROUP BY MI.price, G.grouping_id, E.price
-		) t1
-		GROUP BY t1.price, t1.size
-	) t2
+			SELECT CASE WHEN t1.extra_price > 0 THEN NULL ELSE t1.price END AS price, CASE WHEN t1.extra_price > 0 THEN NULL ELSE t1.size END AS "size", ARRAY[t1.unit_price + COALESCE(t1.extra_price, 0), t1."count"] AS items, SUM(t1."count") AS total_items
+			FROM(
+				SELECT G.price, G.size, G.grouping_id, 
+				MI.price unit_price, SUM(CI.amount) "count", (
+				SELECT SUM(COALESCE(E.price, 0)) FROM store.cart_extra CE JOIN store.extra E ON E.extra_id = CE.extra_id
+					WHERE CE.cart_item_id = CI.cart_item_id AND CE.cart_id = CI.cart_id) AS extra_price
+				FROM store.cart_item CI
+				JOIN store.menu_item MI ON MI.menu_item_id = CI.menu_item_id
+				LEFT JOIN store.grouping G ON G.grouping_id = MI.grouping_id
+				WHERE CI.cart_id = user_cart_id
+				GROUP BY MI.price, G.grouping_id, extra_price
+			) t1
+			GROUP BY t1.extra_price, items, t1.price, t1.size
+		) t2
+	GROUP BY t2.price, t2.size
+	) t3
 	CROSS JOIN store.tax
 	GROUP BY tax.tax_amount;
 END;
@@ -309,13 +313,13 @@ END;
 $func$;
 
 CREATE OR REPLACE FUNCTION store.fetch_paypal_order_items(user_cart_id INTEGER)
-RETURNS TABLE (name TEXT, price NUMERIC(4,2), amount INTEGER, extras JSON[])
+RETURNS TABLE (name TEXT, price NUMERIC(4,2), amount INTEGER, extra_price NUMERIC(4,2), extras JSON[])
 LANGUAGE plpgsql
 SECURITY DEFINER AS
 $func$
 BEGIN
 	RETURN QUERY
-	SELECT MI.name, MI.price, CI.amount, array_agg(json_build_object('category', EC.name, 'extra', E.name)) AS extras
+	SELECT MI.name, MI.price, CI.amount, SUM(COALESCE(E.price, 0)) AS extra_price, array_agg(json_build_object('category', EC.name, 'extra', E.name)) AS extras
 	FROM store.cart_item CI
 	JOIN store.menu_item MI ON MI.menu_item_id = CI.menu_item_id
 	LEFT JOIN store.cart_extra CE ON CE.cart_item_id = CI.cart_item_id AND CE.cart_id = CI.cart_id
@@ -325,7 +329,8 @@ BEGIN
 	GROUP BY MI.name, MI.price, CI.amount;
 END;
 $func$;
-
+SELECT * FROM store.fetch_paypal_order_items(5)
+SELECT * FROM store.fetch_totaling_cart(5)
 --END OF CHECKOUT FUNCTIONS
 
 --Category Functions
