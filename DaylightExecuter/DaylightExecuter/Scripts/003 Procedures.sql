@@ -185,10 +185,7 @@ BEGIN
 	END IF;
 END;
 $$;
-CALL store.create_order(8::INTEGER, 1::SMALLINT, 1::SMALLINT, '2023-05-12'::DATE, NULL::INTEGER, '[{"first_name": "Test", "last_name": "Tester", "email": "test@gmail.com", "phone_number": "(620) 003-2332"}]'::JSON,
-      null::INTEGER,
-      null::INTEGER)
-SELECT * FROM store.order O JOIN store.customer_order_info COI ON COI.customer_order_info_id = O.customer_order_info_id WHERE cart_id = 9
+
 CREATE OR REPLACE PROCEDURE store.insert_customer_order_info(customer_info JSON, OUT customer_id INTEGER)
 LANGUAGE plpgsql AS
 $$
