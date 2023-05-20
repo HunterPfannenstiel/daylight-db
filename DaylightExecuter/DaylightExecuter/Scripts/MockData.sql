@@ -36,7 +36,7 @@ CALL store.create_cart(cart_id, '[{"cart_item_id": 1, "menu_item_id": 1, "amount
 					   {"cart_item_id": 4, "menu_item_id": 1, "amount": 12}]');
 
 CALL store.create_order(cart_id, 1::SMALLINT, 9::SMALLINT, NOW()::DATE, order_id, 
-					   '{"first_name": "Algonquin", "last_name": "Monk", "email": "alg@monkey.com", "phone_number": "(620) banana"}'::JSON);
+					   '[{"first_name": "Algonquin", "last_name": "Monk", "email": "alg@monkey.com", "phone_number": "(620) banana"}]'::JSON);
 CALL store.confirm_order(order_id, 124.54, 16.01, 140.55, 1::SMALLINT, '123Banana');
 END $$;
 --
