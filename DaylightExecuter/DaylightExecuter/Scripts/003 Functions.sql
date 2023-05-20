@@ -41,22 +41,6 @@ BEGIN
 	WHERE G.name = grouping_name AND MI.is_active = true;
 END;
 $func$;
---END OF FUNCTIONS CREATED IN 'Tables.sql'
-DROP FUNCTION IF EXISTS store.fetch_groupings;
-DROP FUNCTION IF EXISTS store.fetch_grouping_names;
-DROP FUNCTION IF EXISTS store.fetch_item_details;
-DROP FUNCTION IF EXISTS store.fetch_group_item_details;
-DROP FUNCTION IF EXISTS store.view_cart;
-DROP FUNCTION IF EXISTS store.view_account_orders;
-DROP FUNCTION IF EXISTS store.check_cart_process;
-DROP FUNCTION IF EXISTS store.get_checkout_info;
-DROP FUNCTION IF EXISTS store.get_cart_availability;
-DROP FUNCTION IF EXISTS store.fetch_totaling_cart;
-DROP FUNCTION IF EXISTS store.retrieve_stripe_id;
-DROP FUNCTION IF EXISTS store.fetch_paypal_order_items;
-DROP FUNCTION IF EXISTS store.fetch_group_info;
-DROP FUNCTION IF EXISTS store.fetch_menu_names;
-DROP FUNCTION IF EXISTS store.fetch_categories;
 
 --Fetches the various groupings and displays them like a menu item
 CREATE OR REPLACE FUNCTION store.fetch_groupings()
