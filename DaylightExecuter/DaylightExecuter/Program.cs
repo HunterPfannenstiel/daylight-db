@@ -24,7 +24,7 @@ public class Program
 
 		if (!result.Successful) Console.WriteLine(result.Error);
 		else Console.WriteLine("Success!");
-		Console.Write("Press any key to close");
+		Console.Write("Press enter to close");
 		Console.ReadLine();
 	}
 }
