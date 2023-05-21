@@ -213,17 +213,18 @@ $func$;
 
 --Checkout Functions
 CREATE OR REPLACE FUNCTION store.get_checkout_info()
-RETURNS TABLE (locations JSON, pickup_times JSON)
+RETURNS TABLE (common_name TEXT, city TEXT, "state" TEXT, zip TEXT, address TEXT, phone_number TEXT, location_id SMALLINT, times JSON[])
 LANGUAGE plpgsql 
 SECURITY DEFINER AS
 $func$
 BEGIN
 	RETURN QUERY
-	SELECT t1.locations, t2.times
-	FROM
-		(SELECT json_agg(L) AS locations FROM store.location L) t1
-	CROSS JOIN
-		(SELECT json_agg(time) AS times FROM (SELECT PT.pickup_time_id, to_char(PT.pickup_time, 'HH:MI AM') AS pickup_time FROM store.pickup_time PT ORDER BY PT.pickup_time ASC) AS time) t2;
+	SELECT L.common_name, L.city, L.state, L.zip, L.address, L.phone_number, L.location_id, array_agg(json_build_object('time', to_char(PT.pickup_time, 'HH:MI AM'), 'id', PT.pickup_time_id) ORDER BY PT.pickup_time ASC) AS times
+	FROM store.location L
+	JOIN store.location_pickup_time LPT ON LPT.location_id = L.location_id
+	JOIN store.pickup_time PT ON PT.pickup_time_id = LPT.pickup_time_id
+		AND PT.is_active = true
+	GROUP BY L.common_name, L.city, L.state, L.zip, L.address, L.phone_number, L.location_id;
 END;
 $func$;
 

@@ -277,5 +277,13 @@ VALUES('5:00 AM'), ('5:30 AM'),
 ('11:00 AM'), ('11:30 AM'),
 ('12:00 PM');
 
+INSERT INTO store.location_pickup_time(location_id, pickup_time_id)
+VALUES (1, 1), (2, 1), (1, 2), (2, 2), (1, 3), (2, 3), (1, 4), (2, 4), (1, 5), (2, 5), (1, 6), (2, 6), (1, 7), (2, 7), (1, 8), (2, 8), 
+(1, 9), (2, 9), (2, 10), (2, 11), (2, 12), (2, 13), (2, 14), (2, 15), 
+(1, 10), (1, 11), (1, 12), (1, 13), (1, 14), (1, 15);
+
 INSERT INTO store.tax(tax_amount)
 VALUES(.08);
+
+INSERT INTO store.location_closed_weekday(location_id, weekday_id)
+VALUES (2, 1), (2, 2);

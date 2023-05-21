@@ -1,4 +1,6 @@
 DROP TABLE IF EXISTS store."order";
+DROP TABLE IF EXISTS store.location_pickup_time;
+DROP TABLE IF EXISTS store.location_closed_weekday;
 DROP TABLE IF EXISTS store.location;
 DROP TABLE IF EXISTS store.customer_order_info;
 DROP TABLE IF EXISTS store.pickup_time;

@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS store.location
     location_id smallserial NOT NULL,
     city text NOT NULL,
     state text NOT NULL,
-    zip numeric NOT NULL,
+    zip text NOT NULL,
     address text NOT NULL,
     common_name text,
     phone_number text,
@@ -196,6 +196,12 @@ CREATE TABLE IF NOT EXISTS store.weekday
     UNIQUE (weekday)
 );
 
+CREATE TABLE IF NOT EXISTS store.location_closed_weekday
+(
+	location_id smallint NOT NULL,
+	weekday_id smallint NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS store.item_range_availability
 (
     range_availability_id smallint NOT NULL,
@@ -231,7 +237,15 @@ CREATE TABLE IF NOT EXISTS store.pickup_time
 (
     pickup_time_id smallserial NOT NULL,
     pickup_time time(0) without time zone NOT NULL,
+	is_active boolean DEFAULT true,
     PRIMARY KEY (pickup_time_id)
+);
+
+CREATE TABLE IF NOT EXISTS store.location_pickup_time
+(
+	location_id smallint NOT NULL,
+	pickup_time_id smallint NOT NULL,
+	PRIMARY KEY(location_id, pickup_time_id)
 );
 
 CREATE TABLE IF NOT EXISTS store.payment_processor
@@ -470,6 +484,34 @@ ALTER TABLE IF EXISTS store.account_user_info
     ADD FOREIGN KEY (account_id)
     REFERENCES store.account (account_id) MATCH SIMPLE
     ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+	
+ALTER TABLE IF EXISTS store.location_pickup_time
+	ADD FOREIGN KEY (location_id)
+	REFERENCES store.location (location_id) MATCH SIMPLE
+	ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+
+ALTER TABLE IF EXISTS store.location_pickup_time
+	ADD FOREIGN KEY (pickup_time_id)
+	REFERENCES store.pickup_time (pickup_time_id) MATCH SIMPLE
+	ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+	
+ALTER TABLE IF EXISTS store.location_closed_weekday
+	ADD FOREIGN KEY (location_id)
+	REFERENCES store.location (location_id) MATCH SIMPLE
+	ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+	
+ALTER TABLE IF EXISTS store.location_closed_weekday
+	ADD FOREIGN KEY (weekday_id)
+	REFERENCES store.weekday (weekday_id) MATCH SIMPLE
+	ON UPDATE NO ACTION
     ON DELETE NO ACTION
     NOT VALID;
 
