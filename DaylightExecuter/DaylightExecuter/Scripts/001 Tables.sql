@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS store."order"
     payment_processor_id smallint,
     is_printed boolean NOT NULL DEFAULT false,
     is_verified boolean NOT NULL DEFAULT false,
-    is_error boolean NOT NULL DEFAULT false,
+    error_message text,
     subtotal numeric(6, 2),
     tax numeric(5, 2),
     total_price numeric(6, 2),
@@ -161,7 +161,9 @@ CREATE TABLE IF NOT EXISTS store.extra_group_extra
 (
     extra_id smallint NOT NULL,
     extra_group_id smallint NOT NULL,
-    PRIMARY KEY (extra_id, extra_group_id)
+	order_value smallint,
+    PRIMARY KEY (extra_id, extra_group_id),
+	UNIQUE(extra_group_id, order_value)
 );
 
 CREATE TABLE IF NOT EXISTS store.item_extra_group
@@ -223,6 +225,7 @@ CREATE TABLE IF NOT EXISTS store.user_info
     first_name text NOT NULL,
     last_name text NOT NULL,
     phone_number text NOT NULL,
+	is_favorited boolean NOT NULL DEFAULT false,
     PRIMARY KEY (user_info_id)
 );
 

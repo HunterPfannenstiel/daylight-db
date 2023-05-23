@@ -80,7 +80,7 @@ BEGIN
 	SELECT tb.name, tb.menu_item_id AS id, tb.price, tb.image, tb.description, tb.group_price, tb.group_name, tb.group_size, json_agg(tb.extras) AS extras
 	FROM(
 		SELECT MI.name, MI.menu_item_id, MI.price, MI.image, MI.description, G.price AS group_price, G.name AS group_name, G.size AS group_size,
-		json_build_object('category', EC.name, 'extras', json_agg(json_build_object('name', E.name, 'price', E.price, 'id', E.extra_id))) AS extras
+		json_build_object('category', EC.name, 'extras', json_agg(json_build_object('name', E.name, 'price', E.price, 'id', E.extra_id) ORDER BY EGE.order_value)) AS extras
 		FROM store.menu_item MI
 		LEFT JOIN store.item_extra_group IEG ON IEG.menu_item_id = MI.menu_item_id
 		LEFT JOIN store.extra_group_extra EGE ON EGE.extra_group_id = IEG.extra_group_id

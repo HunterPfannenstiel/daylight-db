@@ -168,44 +168,45 @@ INSERT INTO store.extra_group (extra_category_id, name) VALUES
 (5, 'Sandwich Types'), 
 (6, 'Biscuits and Gravy Sizes');
 
-INSERT INTO store.extra_group_extra (extra_group_id, extra_id) VALUES 
-(1, 1), 
-(1, 2), 
-(1, 3), 
-(1, 4), 
-(1, 5), 
-(1, 6), 
-(1, 7), 
-(1, 9), 
-(1, 10), 
+INSERT INTO store.extra_group_extra (extra_group_id, extra_id, order_value) VALUES 
+(1, 1, 1), 
+(1, 2, NULL), 
+(1, 3, NULL), 
+(1, 4, NULL), 
+(1, 5, NULL), 
+(1, 6, NULL), 
+(1, 7, NULL), 
+(1, 9, NULL), 
+(1, 10, NULL), 
 
-(2, 8), 
+(2, 1, 1),
+(2, 8, NULL), 
 
-(3, 11), 
-(3, 12), 
-(3, 13), 
+(3, 11, NULL), 
+(3, 12, NULL), 
+(3, 13, NULL), 
 
-(4, 22), 
-(4, 23), 
+(4, 22, NULL), 
+(4, 23, NULL), 
 
-(5, 14), 
-(5, 15), 
-(5, 16), 
-(5, 17), 
+(5, 14, NULL), 
+(5, 15, NULL), 
+(5, 16, NULL), 
+(5, 17, NULL), 
 
-(6, 18), 
-(6, 19), 
-(6, 20), 
-(6, 21), 
+(6, 18, NULL), 
+(6, 19, NULL), 
+(6, 20, NULL), 
+(6, 21, NULL), 
 
-(7, 24), 
-(7, 25), 
+(7, 24, NULL), 
+(7, 25, NULL), 
 
-(8, 26), 
-(8, 27), 
+(8, 26, NULL), 
+(8, 27, NULL), 
 
-(9, 28), 
-(9, 29);
+(9, 28, NULL), 
+(9, 29, NULL);
 
 INSERT INTO store.item_extra_group (menu_item_id, extra_group_id) VALUES 
 (1, 1), 

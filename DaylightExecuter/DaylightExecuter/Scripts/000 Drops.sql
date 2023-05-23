@@ -57,6 +57,7 @@ DROP PROCEDURE IF EXISTS store.check_order_verification;
 DROP PROCEDURE IF EXISTS store.create_order;
 DROP PROCEDURE IF EXISTS store.insert_customer_order_info;
 DROP PROCEDURE IF EXISTS store.confirm_order;
+DROP PROCEDURE IF EXISTS store.set_order_error;
 DROP PROCEDURE IF EXISTS store.create_user_info;
 DROP PROCEDURE IF EXISTS store.create_account;
 DROP PROCEDURE IF EXISTS store.modify_menu_item;
