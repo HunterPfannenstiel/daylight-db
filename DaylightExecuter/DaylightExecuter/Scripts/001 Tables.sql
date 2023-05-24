@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS store."order"
     subtotal numeric(6, 2),
     tax numeric(5, 2),
     total_price numeric(6, 2),
+	processor_fee numeric(5, 2),
     payment_uid text,
     created_on timestamp(0) NOT NULL DEFAULT NOW(),
     account_id integer,
@@ -222,11 +223,7 @@ CREATE TABLE IF NOT EXISTS store.account
 CREATE TABLE IF NOT EXISTS store.user_info
 (
     user_info_id serial NOT NULL,
-<<<<<<< HEAD
 	account_id integer NOT NULL,
-=======
-	account_id int NOT NULL,
->>>>>>> bfcdf8b47bc44a38c9bbb7bb5a63c27696df9065
     first_name text NOT NULL,
     last_name text NOT NULL,
     phone_number text NOT NULL,

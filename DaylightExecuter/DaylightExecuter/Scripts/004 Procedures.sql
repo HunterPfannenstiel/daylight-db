@@ -167,13 +167,14 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE PROCEDURE store.confirm_order(confirm_cart_id INTEGER, order_subtotal NUMERIC(6,2), order_tax NUMERIC(5,2), order_total NUMERIC(6,2), order_payment_processor SMALLINT, order_payment_uid TEXT)
+CREATE OR REPLACE PROCEDURE store.confirm_order(confirm_cart_id INTEGER, order_subtotal NUMERIC(6,2), order_tax NUMERIC(5,2), 
+	order_total NUMERIC(6,2), order_payment_processor SMALLINT, order_payment_uid TEXT, order_fee NUMERIC(5, 2) DEFAULT NULL)
 LANGUAGE plpgsql 
 SECURITY DEFINER AS
 $$
 BEGIN
 	UPDATE store.order
-	SET subtotal = order_subtotal, tax = order_tax, total_price = order_total, payment_processor_id = order_payment_processor, payment_uid = order_payment_uid,
+	SET subtotal = order_subtotal, tax = order_tax, total_price = order_total, processor_fee = order_fee, payment_processor_id = order_payment_processor, payment_uid = order_payment_uid,
 		is_verified = true, error_message = NULL
 	WHERE cart_id = confirm_cart_id;
 	
