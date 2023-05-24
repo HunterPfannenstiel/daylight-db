@@ -400,3 +400,5 @@ FodyWeavers.xsd
 *.sln.iml
 
 DaylightExecuter/.vs/
+DaylightExecuter\DaylightExecuter\obj
+DaylightExecuter\DaylightExecuter\bin
