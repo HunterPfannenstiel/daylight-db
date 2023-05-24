@@ -8,4 +8,4 @@ build_property.PlatformNeutralAssembly =
 build_property.EnforceExtendedAnalyzerRules = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = DaylightExecuter
-build_property.ProjectDir = c:\Users\pfann\.vscode\Code\Database\Postgres\daylight\DaylightExecuter\DaylightExecuter\
+build_property.ProjectDir = c:\Users\pfann\Code\Database\Postgres\daylight\DaylightExecuter\DaylightExecuter\
