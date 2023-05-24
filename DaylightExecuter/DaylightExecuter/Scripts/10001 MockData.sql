@@ -20,7 +20,7 @@ CALL store.create_cart(cart_id, '[{"cart_item_id": 1, "menu_item_id": 1, "amount
 CALL store.create_account('jstarz@monkey.com', acc_id, 
 '{"first_name": "Joshua", "last_name": "Starz", "phone_number": "(620) starsssz"}'::JSON);
 
-SELECT AUI.user_info_id INTO info_id FROM store.account_user_info AUI WHERE AUI.account_id = acc_id;
+SELECT UI.user_info_id INTO info_id FROM store.user_info UI WHERE UI.account_id = acc_id;
 
 CALL store.create_order(cart_id, 1::SMALLINT, 9::SMALLINT, NOW()::DATE, order_id, NULL, acc_id, info_id);
 CALL store.confirm_order(order_id, 124.54, 16.01, 140.55, 1::SMALLINT, '123Banana');

@@ -167,20 +167,17 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE PROCEDURE store.confirm_order(confirm_order_id INTEGER, order_subtotal NUMERIC(6,2), order_tax NUMERIC(5,2), order_total NUMERIC(6,2), order_payment_processor SMALLINT, order_payment_uid TEXT)
+CREATE OR REPLACE PROCEDURE store.confirm_order(confirm_cart_id INTEGER, order_subtotal NUMERIC(6,2), order_tax NUMERIC(5,2), order_total NUMERIC(6,2), order_payment_processor SMALLINT, order_payment_uid TEXT)
 LANGUAGE plpgsql 
 SECURITY DEFINER AS
 $$
-DECLARE order_cart_id INTEGER;
 BEGIN
 	UPDATE store.order
 	SET subtotal = order_subtotal, tax = order_tax, total_price = order_total, payment_processor_id = order_payment_processor, payment_uid = order_payment_uid,
 		is_verified = true, error_message = NULL
-	WHERE order_id = confirm_order_id;
+	WHERE cart_id = confirm_cart_id;
 	
-	SELECT O.cart_id INTO order_cart_id FROM store.order O WHERE O.order_id = confirm_order_id;
-	
-	CALL store.update_cart_lock(order_cart_id, true);
+	CALL store.update_cart_lock(confirm_cart_id, true);
 	
 	MERGE INTO store.cart_item T
 	USING (SELECT CI.cart_id, CI.cart_item_id, (CI.amount * (MI.price)) AS subtotal,
@@ -191,7 +188,7 @@ BEGIN
 			), 0) AS extra_price
 		   	FROM store.cart_item CI
 			JOIN store.menu_item MI ON MI.menu_item_id = CI.menu_item_id
-		  	WHERE CI.cart_id = order_cart_id) S ON S.cart_item_id = T.cart_item_id AND S.cart_id = T.cart_id
+		  	WHERE CI.cart_id = confirm_cart_id) S ON S.cart_item_id = T.cart_item_id AND S.cart_id = T.cart_id
 	WHEN MATCHED THEN
 		UPDATE SET subtotal = S.subtotal + S.extra_price;
 END;
@@ -231,12 +228,9 @@ SECURITY DEFINER AS
 $$
 DECLARE "id" INTEGER;
 BEGIN
-	INSERT INTO store.user_info(first_name, last_name, phone_number)
-	VALUES(user_first_name, user_last_name, user_phone_number)
+	INSERT INTO store.user_info(first_name, last_name, phone_number, account_id)
+	VALUES(user_first_name, user_last_name, user_phone_number, user_account_id)
 	RETURNING user_info_id INTO "id";
-	
-	INSERT INTO store.account_user_info(user_info_id, account_id)
-	VALUES("id", user_account_id);
 END;
 $$;
 --END OF ACCOUNT PROCEDURES

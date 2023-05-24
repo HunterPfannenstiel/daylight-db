@@ -222,18 +222,12 @@ CREATE TABLE IF NOT EXISTS store.account
 CREATE TABLE IF NOT EXISTS store.user_info
 (
     user_info_id serial NOT NULL,
+	account_id smallint NOT NULL,
     first_name text NOT NULL,
     last_name text NOT NULL,
     phone_number text NOT NULL,
 	is_favorited boolean NOT NULL DEFAULT false,
     PRIMARY KEY (user_info_id)
-);
-
-CREATE TABLE IF NOT EXISTS store.account_user_info
-(
-    user_info_id integer NOT NULL,
-    account_id integer NOT NULL,
-    PRIMARY KEY (user_info_id, account_id)
 );
 
 CREATE TABLE IF NOT EXISTS store.pickup_time
@@ -345,7 +339,13 @@ ALTER TABLE IF EXISTS store.cart_extra
     ON UPDATE NO ACTION
     ON DELETE CASCADE
     NOT VALID;
-
+	
+ALTER TABLE IF EXISTS store.user_info
+	ADD FOREIGN KEY (account_id)
+	REFERENCES store.account (account_id) MATCH SIMPLE
+	ON UPDATE NO ACTION
+    ON DELETE CASCADE
+    NOT VALID;
 
 ALTER TABLE IF EXISTS store.menu_item
     ADD FOREIGN KEY (grouping_id)
@@ -470,22 +470,6 @@ ALTER TABLE IF EXISTS store.item_range_availability
 ALTER TABLE IF EXISTS store.item_range_availability
     ADD FOREIGN KEY (menu_item_id)
     REFERENCES store.menu_item (menu_item_id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE NO ACTION
-    NOT VALID;
-
-
-ALTER TABLE IF EXISTS store.account_user_info
-    ADD FOREIGN KEY (user_info_id)
-    REFERENCES store.user_info (user_info_id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE NO ACTION
-    NOT VALID;
-
-
-ALTER TABLE IF EXISTS store.account_user_info
-    ADD FOREIGN KEY (account_id)
-    REFERENCES store.account (account_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE NO ACTION
     NOT VALID;
