@@ -222,7 +222,7 @@ CREATE TABLE IF NOT EXISTS store.account
 CREATE TABLE IF NOT EXISTS store.user_info
 (
     user_info_id serial NOT NULL,
-	account_id smallint NOT NULL,
+	account_id integer NOT NULL,
     first_name text NOT NULL,
     last_name text NOT NULL,
     phone_number text NOT NULL,
