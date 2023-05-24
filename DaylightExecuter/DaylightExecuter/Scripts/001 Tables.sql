@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS store."order"
     payment_processor_id smallint,
     is_printed boolean NOT NULL DEFAULT false,
     is_verified boolean NOT NULL DEFAULT false,
-    is_error boolean NOT NULL DEFAULT false,
+    error_message text,
     subtotal numeric(6, 2),
     tax numeric(5, 2),
     total_price numeric(6, 2),
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS store.location
     location_id smallserial NOT NULL,
     city text NOT NULL,
     state text NOT NULL,
-    zip numeric NOT NULL,
+    zip text NOT NULL,
     address text NOT NULL,
     common_name text,
     phone_number text,
@@ -161,7 +161,9 @@ CREATE TABLE IF NOT EXISTS store.extra_group_extra
 (
     extra_id smallint NOT NULL,
     extra_group_id smallint NOT NULL,
-    PRIMARY KEY (extra_id, extra_group_id)
+	order_value smallint,
+    PRIMARY KEY (extra_id, extra_group_id),
+	UNIQUE(extra_group_id, order_value)
 );
 
 CREATE TABLE IF NOT EXISTS store.item_extra_group
@@ -196,6 +198,12 @@ CREATE TABLE IF NOT EXISTS store.weekday
     UNIQUE (weekday)
 );
 
+CREATE TABLE IF NOT EXISTS store.location_closed_weekday
+(
+	location_id smallint NOT NULL,
+	weekday_id smallint NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS store.item_range_availability
 (
     range_availability_id smallint NOT NULL,
@@ -217,6 +225,7 @@ CREATE TABLE IF NOT EXISTS store.user_info
     first_name text NOT NULL,
     last_name text NOT NULL,
     phone_number text NOT NULL,
+	is_favorited boolean NOT NULL DEFAULT false,
     PRIMARY KEY (user_info_id)
 );
 
@@ -231,7 +240,15 @@ CREATE TABLE IF NOT EXISTS store.pickup_time
 (
     pickup_time_id smallserial NOT NULL,
     pickup_time time(0) without time zone NOT NULL,
+	is_active boolean DEFAULT true,
     PRIMARY KEY (pickup_time_id)
+);
+
+CREATE TABLE IF NOT EXISTS store.location_pickup_time
+(
+	location_id smallint NOT NULL,
+	pickup_time_id smallint NOT NULL,
+	PRIMARY KEY(location_id, pickup_time_id)
 );
 
 CREATE TABLE IF NOT EXISTS store.payment_processor
@@ -470,6 +487,34 @@ ALTER TABLE IF EXISTS store.account_user_info
     ADD FOREIGN KEY (account_id)
     REFERENCES store.account (account_id) MATCH SIMPLE
     ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+	
+ALTER TABLE IF EXISTS store.location_pickup_time
+	ADD FOREIGN KEY (location_id)
+	REFERENCES store.location (location_id) MATCH SIMPLE
+	ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+
+ALTER TABLE IF EXISTS store.location_pickup_time
+	ADD FOREIGN KEY (pickup_time_id)
+	REFERENCES store.pickup_time (pickup_time_id) MATCH SIMPLE
+	ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+	
+ALTER TABLE IF EXISTS store.location_closed_weekday
+	ADD FOREIGN KEY (location_id)
+	REFERENCES store.location (location_id) MATCH SIMPLE
+	ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+	
+ALTER TABLE IF EXISTS store.location_closed_weekday
+	ADD FOREIGN KEY (weekday_id)
+	REFERENCES store.weekday (weekday_id) MATCH SIMPLE
+	ON UPDATE NO ACTION
     ON DELETE NO ACTION
     NOT VALID;
 

@@ -1390,11 +1390,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\pfann\\.vscode\\Code\\Database\\Postgres\\daylight\\DaylightExecuter\\DaylightExecuter\\DaylightExecuter.csproj",
+      "projectUniqueName": "E:\\Coding\\Websites\\Daylight2\\Database Git\\DaylightExecuter\\DaylightExecuter\\DaylightExecuter.csproj",
       "projectName": "DaylightExecuter",
-      "projectPath": "C:\\Users\\pfann\\.vscode\\Code\\Database\\Postgres\\daylight\\DaylightExecuter\\DaylightExecuter\\DaylightExecuter.csproj",
+      "projectPath": "E:\\Coding\\Websites\\Daylight2\\Database Git\\DaylightExecuter\\DaylightExecuter\\DaylightExecuter.csproj",
       "packagesPath": "C:\\Users\\pfann\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\pfann\\.vscode\\Code\\Database\\Postgres\\daylight\\DaylightExecuter\\DaylightExecuter\\obj\\",
+      "outputPath": "E:\\Coding\\Websites\\Daylight2\\Database Git\\DaylightExecuter\\DaylightExecuter\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\pfann\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -1444,7 +1444,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.202\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.203\\RuntimeIdentifierGraph.json"
       }
     }
   }

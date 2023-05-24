@@ -175,7 +175,7 @@ DECLARE order_cart_id INTEGER;
 BEGIN
 	UPDATE store.order
 	SET subtotal = order_subtotal, tax = order_tax, total_price = order_total, payment_processor_id = order_payment_processor, payment_uid = order_payment_uid,
-		is_verified = true, is_error = false
+		is_verified = true, error_message = NULL
 	WHERE order_id = confirm_order_id;
 	
 	SELECT O.cart_id INTO order_cart_id FROM store.order O WHERE O.order_id = confirm_order_id;
@@ -194,6 +194,17 @@ BEGIN
 		  	WHERE CI.cart_id = order_cart_id) S ON S.cart_item_id = T.cart_item_id AND S.cart_id = T.cart_id
 	WHEN MATCHED THEN
 		UPDATE SET subtotal = S.subtotal + S.extra_price;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE store.set_order_error(user_cart_id INTEGER, "message" TEXT)
+LANGUAGE plpgsql
+SECURITY DEFINER AS
+$$
+BEGIN
+	UPDATE store.order
+	SET error_message = "message"
+	WHERE cart_id = user_cart_id;
 END;
 $$;
 --END OF ORDER PROCEDURES
