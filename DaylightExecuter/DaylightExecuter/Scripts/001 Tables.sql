@@ -222,7 +222,11 @@ CREATE TABLE IF NOT EXISTS store.account
 CREATE TABLE IF NOT EXISTS store.user_info
 (
     user_info_id serial NOT NULL,
+<<<<<<< HEAD
 	account_id integer NOT NULL,
+=======
+	account_id int NOT NULL,
+>>>>>>> bfcdf8b47bc44a38c9bbb7bb5a63c27696df9065
     first_name text NOT NULL,
     last_name text NOT NULL,
     phone_number text NOT NULL,
