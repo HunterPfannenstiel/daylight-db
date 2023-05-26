@@ -24,6 +24,8 @@ GRANT EXECUTE ON FUNCTION store.fetch_totaling_cart(user_cart_id integer) TO day
 GRANT EXECUTE ON FUNCTION store.retrieve_stripe_id(user_cart_id integer) TO daylight_user;
 
 GRANT EXECUTE ON FUNCTION store.fetch_paypal_order_items(user_cart_id integer) TO daylight_user;
+
+REVOKE EXECUTE ON FUNCTION store.fetch_item_customizations() FROM daylight_user;
 --
 
 --Procedure Permissions
