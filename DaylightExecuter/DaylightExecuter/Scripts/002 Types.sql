@@ -17,3 +17,9 @@ CREATE TYPE store.customer_info_t AS (
 	email TEXT,
 	phone_number TEXT
 );
+
+CREATE TYPE store.images AS (
+	"publicId" TEXT,
+	"imageUrl" TEXT,
+	"displayOrder" SMALLINT
+);

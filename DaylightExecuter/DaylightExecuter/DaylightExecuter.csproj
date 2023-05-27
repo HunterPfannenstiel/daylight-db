@@ -16,6 +16,8 @@
     <None Remove="Scripts\003 Functions.sql" />
     <None Remove="Scripts\003 Procedures.sql" />
     <None Remove="Scripts\004 Procedures.sql" />
+    <None Remove="Scripts\005 Admin Procedures.sql" />
+    <None Remove="Scripts\006 Admin Functions.sql" />
     <None Remove="Scripts\1000 Account Functions.sql" />
     <None Remove="Scripts\1000 Data.sql" />
     <None Remove="Scripts\10000 Data.sql" />
@@ -30,6 +32,8 @@
     <EmbeddedResource Include="Scripts\002 Types.sql" />
     <EmbeddedResource Include="Scripts\003 Functions.sql" />
     <EmbeddedResource Include="Scripts\004 Procedures.sql" />
+    <EmbeddedResource Include="Scripts\005 Admin Procedures.sql" />
+    <EmbeddedResource Include="Scripts\006 Admin Functions.sql" />
     <EmbeddedResource Include="Scripts\1000 Account Functions.sql" />
     <EmbeddedResource Include="Scripts\10000 Data.sql" />
     <EmbeddedResource Include="Scripts\10001 MockData.sql" />

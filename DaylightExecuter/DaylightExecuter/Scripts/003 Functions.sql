@@ -7,17 +7,17 @@ $func$
 BEGIN
 	IF (category IS NULL) THEN
 		RETURN QUERY
-		SELECT MD.name, MD.image, MD.price FROM store.vw_menu_item_details MD;
+		SELECT MD.name, MD.image_url, MD.price FROM store.vw_menu_item_details MD;
 	ELSIF (subcategory IS NULL) THEN
 		RETURN QUERY
-		SELECT MD.name, MD.image, MD.price
+		SELECT MD.name, MD.image_url, MD.price
 		FROM store.vw_menu_item_details MD
 		JOIN store.item_category IC ON IC.name = category
 		JOIN store.menu_item_category MIC ON MIC.menu_item_id = MD.menu_item_id 
 			AND MIC.item_category_id = IC.item_category_id;
 	ELSE 
 		RETURN QUERY
-		SELECT MD.name, MD.image, MD.price
+		SELECT MD.name, MD.image_url, MD.price
 		FROM store.vw_menu_item_details MD
 		JOIN store.item_category IC ON IC.name = category
 		JOIN store.item_subcategory ISC ON ISC.name = subcategory
@@ -94,7 +94,7 @@ BEGIN
 	RETURN QUERY
 	SELECT json_agg(tb) AS extras 
 	FROM (
-		SELECT json_build_object('category', EC.name, 'extras', json_agg(json_strip_nulls(json_build_object('name', E.name, 'price', E.price, 'id', E.extra_id)))) AS extras
+		SELECT json_build_object('category', EC.name, 'extras', json_agg(json_strip_nulls(json_build_object('name', E.name, 'price', E.price, 'id', E.extra_id)) ORDER BY EGE.order_value)) AS extras
 		FROM store.item_extra_group IEG
 		LEFT JOIN store.extra_group_extra EGE ON EGE.extra_group_id = IEG.extra_group_id
 		LEFT JOIN store.extra E ON E.extra_id = EGE.extra_id AND E.price IS NULL
@@ -108,26 +108,20 @@ $func$;
 
 --Fetches the details of a menu item
 CREATE OR REPLACE FUNCTION store.fetch_item_details(item_name TEXT)
-RETURNS TABLE (name TEXT, id SMALLINT, price NUMERIC(4,2), image TEXT, description TEXT, group_price NUMERIC(4,2), group_name TEXT, group_size SMALLINT, extras JSON)
+RETURNS TABLE (name TEXT, id SMALLINT, price NUMERIC(4,2), description TEXT, group_price NUMERIC(4,2), group_name TEXT, group_size SMALLINT, extras JSON, image_urls TEXT[])
 LANGUAGE plpgsql 
 SECURITY DEFINER AS
 $func$
 BEGIN
 	RETURN QUERY
-	SELECT tb.name, tb.menu_item_id AS id, tb.price, tb.image, tb.description, tb.group_price, tb.group_name, tb.group_size, json_agg(tb.extras) AS extras
-	FROM(
-		SELECT MI.name, MI.menu_item_id, MI.price, MI.image, MI.description, G.price AS group_price, G.name AS group_name, G.size AS group_size,
-		json_build_object('category', EC.name, 'extras', json_agg(json_build_object('name', E.name, 'price', E.price, 'id', E.extra_id) ORDER BY EGE.order_value)) AS extras
+		SELECT MI.name, MI.menu_item_id, MI.price, MI.description, G.price AS group_price, G.name AS group_name, G.size AS group_size,
+		(SELECT * FROM store.get_item_extras(MI.menu_item_id)), 
+		array_append((SELECT * FROM store.get_item_images(MI.menu_item_id)), I.image_url) AS image_urls
 		FROM store.menu_item MI
-		LEFT JOIN store.item_extra_group IEG ON IEG.menu_item_id = MI.menu_item_id
-		LEFT JOIN store.extra_group_extra EGE ON EGE.extra_group_id = IEG.extra_group_id
-		LEFT JOIN store.extra E ON E.extra_id = EGE.extra_id
-		LEFT JOIN store.extra_category EC ON EC.extra_category_id = E.extra_category_id
+		JOIN store.image I ON I.image_id = MI.image_id
 		LEFT JOIN store.grouping G ON G.grouping_id = MI.grouping_id
 		WHERE MI.name = item_name
-		GROUP BY MI.name, MI.menu_item_id, MI.price, MI.image, MI.description, G.price, G.name, G.size, EC.name
-	) tb
-	GROUP BY tb.name, tb.menu_item_id, tb.price, tb.image, tb.description, tb.group_price, tb.group_name, tb.group_size;
+		GROUP BY MI.name, MI.menu_item_id, MI.price, I.image_url, MI.description, G.price, G.name, G.size;
 END;
 $func$;
 
