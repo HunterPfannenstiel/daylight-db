@@ -35,8 +35,9 @@ SECURITY DEFINER AS
 $func$
 BEGIN
 	RETURN QUERY
-	SELECT MI.name, MI.image, MI.price
+	SELECT MI.name, MI.price, I.image_url
 	FROM store.menu_item MI
+	JOIN store.image I ON I.image_id = MI.image_id
 	JOIN store.grouping G ON G.grouping_id = MI.grouping_id
 	WHERE G.name = grouping_name AND MI.is_active = true;
 END;
@@ -44,14 +45,15 @@ $func$;
 
 --Fetches the various groupings and displays them like a menu item
 CREATE OR REPLACE FUNCTION store.fetch_groupings()
-RETURNS TABLE ( name TEXT, image TEXT, price numeric(4,2))
+RETURNS TABLE ( name TEXT, image_url TEXT, price numeric(4,2))
 LANGUAGE plpgsql 
 SECURITY DEFINER AS
 $func$
 BEGIN
 	RETURN QUERY
-	SELECT G.name, G.image, G.price 
+	SELECT G.name, I.image_url, G.price 
 	FROM store.grouping G
+	JOIN store.image I ON I.image_id = G.image_id
 	WHERE G.is_active = true;
 END;
 $func$;
@@ -66,6 +68,41 @@ BEGIN
 	SELECT array_agg(G.name) AS names
 	FROM store.grouping G
 	WHERE G.is_active = true;
+END;
+$func$;
+
+CREATE OR REPLACE FUNCTION store.get_item_images(item_id INTEGER)
+RETURNS TABLE (image_urls TEXT[])
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT array_agg(I.image_url) AS image_urls
+	FROM store.menu_item_image MII
+	JOIN store.image I ON I.image_id = MII.image_id
+	WHERE MII.menu_item_id = item_id;
+END;
+$func$;
+
+CREATE OR REPLACE FUNCTION store.get_item_extras(item_id INTEGER)
+RETURNS TABLE (extras JSON)
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT json_agg(tb) AS extras 
+	FROM (
+		SELECT json_build_object('category', EC.name, 'extras', json_agg(json_strip_nulls(json_build_object('name', E.name, 'price', E.price, 'id', E.extra_id)))) AS extras
+		FROM store.item_extra_group IEG
+		LEFT JOIN store.extra_group_extra EGE ON EGE.extra_group_id = IEG.extra_group_id
+		LEFT JOIN store.extra E ON E.extra_id = EGE.extra_id AND E.price IS NULL
+		LEFT JOIN store.extra_category EC ON EC.extra_category_id = E.extra_category_id
+		WHERE IEG.menu_item_id = item_id
+		GROUP BY EC.name
+	) tb
+	WHERE (tb.extras->>'category') IS NOT NULL;
 END;
 $func$;
 
@@ -95,26 +132,20 @@ END;
 $func$;
 
 CREATE OR REPLACE FUNCTION store.fetch_group_item_details(g_name TEXT)
-RETURNS TABLE (name TEXT, id SMALLINT, price NUMERIC(4,2), image TEXT, description TEXT, group_price NUMERIC(4,2), group_name TEXT, group_size SMALLINT, extras JSON)
+RETURNS TABLE (name TEXT, id SMALLINT, price NUMERIC(4,2), image_urls TEXT[], description TEXT, group_price NUMERIC(4,2), group_name TEXT, group_size SMALLINT, extras JSON)
 LANGUAGE plpgsql 
 SECURITY DEFINER AS
 $func$
 BEGIN
 	RETURN QUERY
-	SELECT tb.name, tb.menu_item_id AS id, tb.price, tb.image, tb.description, tb.group_price, tb.group_name, tb.group_size, json_agg(tb.extras) AS extras
-	FROM(
-		SELECT MI.name, MI.menu_item_id, MI.price, MI.image, MI.description, G.price AS group_price, G.name AS group_name, G.size AS group_size,
-		json_build_object('category', EC.name, 'extras', json_agg(json_build_object('name', E.name, 'price', E.price, 'id', E.extra_id))) AS extras
-		FROM store.menu_item MI
-		LEFT JOIN store.item_extra_group IEG ON IEG.menu_item_id = MI.menu_item_id
-		LEFT JOIN store.extra_group_extra EGE ON EGE.extra_group_id = IEG.extra_group_id
-		LEFT JOIN store.extra E ON E.extra_id = EGE.extra_id AND E.price IS NULL
-		LEFT JOIN store.extra_category EC ON EC.extra_category_id = E.extra_category_id
-		JOIN store.grouping G ON G.grouping_id = MI.grouping_id
-		WHERE G.name = g_name
-		GROUP BY MI.name, MI.menu_item_id, MI.price, MI.image, MI.description, G.price, G.name, G.size, EC.name
-	) tb
-	GROUP BY tb.name, tb.menu_item_id, tb.price, tb.image, tb.description, tb.group_price, tb.group_name, tb.group_size;
+	SELECT MI.name, MI.menu_item_id, MI.price, MI.description, G.price AS group_price, G.name AS group_name, G.size AS group_size,
+	(SELECT * FROM store.get_item_extras(MI.menu_item_id)), 
+	array_append((SELECT * FROM store.get_item_images(MI.menu_item_id)), I.image_url)
+	FROM store.menu_item MI
+	JOIN store.image I ON I.image_id = MI.image_id
+	JOIN store.grouping G ON G.grouping_id = MI.grouping_id
+	WHERE G.name = g_name
+	GROUP BY MI.name, MI.menu_item_id, MI.price, I.image_url, MI.description, G.price, G.name, G.size;
 END;
 $func$;
 
@@ -154,7 +185,7 @@ SECURITY DEFINER AS
 $func$
 BEGIN
 	RETURN QUERY
-	SELECT MI.price AS unit_price, CI.cart_item_id, MI.menu_item_id, CI.amount, MI.name, MI.image, G.name AS group_name,
+	SELECT MI.price AS unit_price, CI.cart_item_id, MI.menu_item_id, CI.amount, MI.name, I.image_url, G.name AS group_name,
 	G.size AS group_size, G.price AS group_price, (SELECT json_build_object('info', json_agg(json_build_object('category', EC.name, 'extra', E.name)),
 		'ids', array_agg(E.extra_id), 'price', SUM(COALESCE(E.price, 0)))
 		FROM store.cart_extra CE
@@ -164,6 +195,7 @@ BEGIN
 		GROUP BY CI.cart_item_id) AS extra_info
 	FROM store.cart_item CI
 	JOIN store.menu_item MI ON MI.menu_item_id = CI.menu_item_id
+	JOIN store.image I ON I.image_id = MI.image_id
 	LEFT JOIN store.grouping G ON G.grouping_id = MI.grouping_id
 	WHERE CI.cart_id = user_cart_id
 	ORDER BY CI.cart_item_id ASC;

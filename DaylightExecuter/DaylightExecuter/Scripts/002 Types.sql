@@ -1,6 +1,6 @@
 CREATE TYPE store.menu_items AS (
 	name TEXT,
-	image TEXT,
+	image_url TEXT,
 	price numeric(4, 2)
 );
 

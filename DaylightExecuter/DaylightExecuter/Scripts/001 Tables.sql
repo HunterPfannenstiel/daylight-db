@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS store."grouping"
     price numeric(4, 2) NOT NULL,
     name text NOT NULL,
     size smallint NOT NULL,
-    image text NOT NULL,
+    image_id integer NOT NULL,
 	is_active boolean DEFAULT true NOT NULL,
     PRIMARY KEY (grouping_id),
 	UNIQUE (name)
@@ -82,6 +82,7 @@ CREATE TABLE IF NOT EXISTS store.menu_item
     name text NOT NULL,
     price numeric(4, 2) NOT NULL,
     description text NOT NULL,
+	image_id integer NOT NULL,
     grouping_id smallint,
 	availability_range DATERANGE,
     is_active boolean NOT NULL DEFAULT true,
@@ -351,7 +352,21 @@ ALTER TABLE IF EXISTS store.user_info
 	ON UPDATE NO ACTION
     ON DELETE CASCADE
     NOT VALID;
-
+	
+ALTER TABLE IF EXISTS store.grouping
+	ADD FOREIGN KEY (image_id)
+	REFERENCES store.image (image_id) MATCH SIMPLE
+	ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+	
+ALTER TABLE IF EXISTS store.menu_item
+	ADD FOREIGN KEY (image_id)
+	REFERENCES store.image (image_id) MATCH SIMPLE
+	ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+	
 ALTER TABLE IF EXISTS store.menu_item
     ADD FOREIGN KEY (grouping_id)
     REFERENCES store."grouping" (grouping_id) MATCH SIMPLE
@@ -505,10 +520,8 @@ ALTER TABLE IF EXISTS store.location_closed_weekday
     NOT VALID;
 
 CREATE OR REPLACE VIEW store.vw_menu_item_details AS 
-	SELECT MI.name, MI.image, MI.price, MI.menu_item_id, MI.is_active, 
-		(SELECT I.image_url FROM store.menu_item_image MII 
-		 JOIN store.image I ON I.image_id = MII.image_id WHERE MII.menu_item_id = MI.menu_item_id ORDER BY MII.display_order DESC LIMIT 1) AS image_url
+	SELECT MI.name, MI.price, I.image_url, MI.menu_item_id, MI.is_active
 	FROM store.menu_item MI
+	JOIN store.image I ON I.image_id = MI.image_id
 	WHERE MI.is_active = true;
-
 END;
