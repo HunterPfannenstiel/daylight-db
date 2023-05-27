@@ -81,13 +81,31 @@ CREATE TABLE IF NOT EXISTS store.menu_item
     menu_item_id smallserial NOT NULL,
     name text NOT NULL,
     price numeric(4, 2) NOT NULL,
-    image text NOT NULL,
     description text NOT NULL,
     grouping_id smallint,
+	availability_range DATERANGE,
     is_active boolean NOT NULL DEFAULT true,
 	is_archived boolean NOT NULL DEFAULT false,
     PRIMARY KEY (menu_item_id),
     UNIQUE (name)
+);
+
+CREATE TABLE IF NOT EXISTS store.image
+(
+	image_id serial NOT NULL,
+	image_url text NOT NULL,
+	public_id text NOT NULL,
+	PRIMARY KEY (image_id),
+	UNIQUE (public_id)
+);
+
+CREATE TABLE IF NOT EXISTS store.menu_item_image
+(
+	menu_item_id smallint NOT NULL,
+	image_id integer NOT NULL,
+	display_order smallint,
+	UNIQUE(menu_item_id, display_order),
+	PRIMARY KEY (menu_item_id, image_id)
 );
 
 CREATE TABLE IF NOT EXISTS store.weekday_availability
@@ -184,13 +202,6 @@ CREATE TABLE IF NOT EXISTS store.customer_order_info
     PRIMARY KEY (customer_order_info_id)
 );
 
-CREATE TABLE IF NOT EXISTS store.range_availability
-(
-    range_availability_id smallserial NOT NULL,
-    range_availability daterange NOT NULL,
-    PRIMARY KEY (range_availability_id)
-);
-
 CREATE TABLE IF NOT EXISTS store.weekday
 (
     weekday_id smallint NOT NULL,
@@ -203,13 +214,6 @@ CREATE TABLE IF NOT EXISTS store.location_closed_weekday
 (
 	location_id smallint NOT NULL,
 	weekday_id smallint NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS store.item_range_availability
-(
-    range_availability_id smallint NOT NULL,
-    menu_item_id smallint NOT NULL,
-    PRIMARY KEY (range_availability_id, menu_item_id)
 );
 
 CREATE TABLE IF NOT EXISTS store.account
@@ -354,7 +358,20 @@ ALTER TABLE IF EXISTS store.menu_item
     ON UPDATE NO ACTION
     ON DELETE NO ACTION
     NOT VALID;
-
+	
+ALTER TABLE IF EXISTS store.menu_item_image
+	ADD FOREIGN KEY (menu_item_id)
+	REFERENCES store.menu_item (menu_item_id) MATCH SIMPLE
+	ON UPDATE NO ACTION
+	ON DELETE NO ACTION
+	NOT VALID;
+	
+ALTER TABLE IF EXISTS store.menu_item_image
+	ADD FOREIGN KEY (image_id)
+	REFERENCES store.image (image_id)
+	ON UPDATE NO ACTION
+	ON DELETE NO ACTION
+	NOT VALID;
 
 ALTER TABLE IF EXISTS store.weekday_availability
     ADD FOREIGN KEY (menu_item_id)
@@ -458,22 +475,6 @@ ALTER TABLE IF EXISTS store.item_extra_group
     ON UPDATE NO ACTION
     ON DELETE NO ACTION
     NOT VALID;
-
-
-ALTER TABLE IF EXISTS store.item_range_availability
-    ADD FOREIGN KEY (range_availability_id)
-    REFERENCES store.range_availability (range_availability_id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE NO ACTION
-    NOT VALID;
-
-
-ALTER TABLE IF EXISTS store.item_range_availability
-    ADD FOREIGN KEY (menu_item_id)
-    REFERENCES store.menu_item (menu_item_id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE NO ACTION
-    NOT VALID;
 	
 ALTER TABLE IF EXISTS store.location_pickup_time
 	ADD FOREIGN KEY (location_id)
@@ -503,9 +504,11 @@ ALTER TABLE IF EXISTS store.location_closed_weekday
     ON DELETE NO ACTION
     NOT VALID;
 
-CREATE VIEW store.vw_menu_item_details AS 
-	SELECT MI.name, MI.image, MI.price, MI.menu_item_id, MI.is_active
-	FROM Store.menu_item MI
+CREATE OR REPLACE VIEW store.vw_menu_item_details AS 
+	SELECT MI.name, MI.image, MI.price, MI.menu_item_id, MI.is_active, 
+		(SELECT I.image_url FROM store.menu_item_image MII 
+		 JOIN store.image I ON I.image_id = MII.image_id WHERE MII.menu_item_id = MI.menu_item_id ORDER BY MII.display_order DESC LIMIT 1) AS image_url
+	FROM store.menu_item MI
 	WHERE MI.is_active = true;
-    
+
 END;
