@@ -1,5 +1,6 @@
 CREATE OR REPLACE FUNCTION store.fetch_item_customizations()
 RETURNS TABLE (groupings JSON, extra_groupings JSON, item_categories JSON)
+SECURITY DEFINER
 LANGUAGE plpgsql
 AS
 $func$
@@ -27,6 +28,7 @@ $func$;
 
 CREATE OR REPLACE FUNCTION store.fetch_item_selections(item_id SMALLINT)
 RETURNS TABLE (name TEXT, price NUMERIC(4,2), description TEXT, image_id INTEGER, initial_group_id SMALLINT, initial_extra_groupings JSON[], initial_item_categories JSON[], initial_weekdays JSON[], initial_range DATERANGE)
+SECURITY DEFINER
 LANGUAGE plpgsql
 AS
 $func$
@@ -46,9 +48,11 @@ BEGIN
 	GROUP BY MI.name, MI.price, MI.description, MI.image_id, G.grouping_id, MI.availability_range;
 END;
 $func$;
+SELECT * FROM store.fetch_item_selections(1::SMALLINT)
 
 CREATE OR REPLACE FUNCTION store.fetch_item_initial_categories(item_id SMALLINT)
 RETURNS TABLE (categories JSON)
+SECURITY DEFINER
 LANGUAGE plpgsql
 AS
 $func$
@@ -62,5 +66,40 @@ BEGIN
 		AND "IS".item_subcategory_id = MIS.item_subcategory_id
 	WHERE MIC.menu_item_id = item_id
 	GROUP BY MIC.item_category_id;
+END;
+$func$;
+
+CREATE OR REPLACE FUNCTION store.search_items(phrase TEXT DEFAULT '', includeArchived BOOLEAN DEFAULT NULL, includeInactive BOOLEAN DEFAULT NULL)
+RETURNS TABLE (name TEXT, image_url TEXT, menu_item_id SMALLINT)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	IF includeArchived IS NULL AND includeInactive IS NULL THEN
+		RETURN QUERY
+		SELECT MI.name, I.image_url, MI.menu_item_id
+		FROM store.menu_item MI
+		JOIN store.image I ON I.image_id = MI.image_id
+		WHERE MI.name ILIKE '%' || phrase || '%';
+	ELSIF includeArchived IS NULL THEN
+		RETURN QUERY
+		SELECT MI.name, I.image_url, MI.menu_item_id
+		FROM store.menu_item MI
+		JOIN store.image I ON I.image_id = MI.image_id
+		WHERE MI.name ILIKE '%' || phrase || '%' AND MI.is_active = NOT includeInactive;
+	ELSIF includeInactive IS NULL THEN
+		RETURN QUERY
+		SELECT MI.name, I.image_url, MI.menu_item_id
+		FROM store.menu_item MI
+		JOIN store.image I ON I.image_id = MI.image_id
+		WHERE MI.name ILIKE '%' || phrase || '%' AND MI.is_archived = NOT includeArchived;
+	ELSE
+		RETURN QUERY
+		SELECT MI.name, I.image_url, MI.menu_item_id
+		FROM store.menu_item MI
+		JOIN store.image I ON I.image_id = MI.image_id
+		WHERE MI.name ILIKE '%' || phrase || '%' AND MI.is_archived = includeArchived AND MI.is_active = NOT includeInactive;
+	END IF;
 END;
 $func$;
