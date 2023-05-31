@@ -69,4 +69,5 @@ DROP PROCEDURE IF EXISTS store.create_account;
 DROP PROCEDURE IF EXISTS store.modify_menu_item;
 DROP PROCEDURE IF EXISTS store.update_item_extras;
 DROP PROCEDURE IF EXISTS store.create_menu_item;
+DROP PROCEDURE IF EXISTS store.add_user_info;
 DROP TYPE IF EXISTS store.images;
