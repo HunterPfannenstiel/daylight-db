@@ -21,5 +21,6 @@ CREATE TYPE store.customer_info_t AS (
 CREATE TYPE store.images AS (
 	"publicId" TEXT,
 	"imageUrl" TEXT,
-	"displayOrder" SMALLINT
+	"displayOrder" SMALLINT,
+	"imageId" INTEGER
 );
