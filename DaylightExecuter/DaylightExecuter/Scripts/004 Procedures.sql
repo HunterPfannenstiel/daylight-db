@@ -237,25 +237,6 @@ $$;
 --END OF ACCOUNT PROCEDURES
 
 --Menu Procedures
-CREATE OR REPLACE PROCEDURE store.modify_menu_item(item_name TEXT, item_price NUMERIC(4,2), item_image TEXT, item_description TEXT, OUT new_id SMALLINT, item_grouping_id SMALLINT DEFAULT NULL, item_id SMALLINT DEFAULT NULL)
-LANGUAGE plpgsql 
-SECURITY DEFINER AS
-$$
-BEGIN
-	IF item_id IS NOT NULL THEN
-		UPDATE store.menu_item
-		SET name = COALESCE(item_name, name), price = COALESCE(item_price, price), image = COALESCE(item_image, image),
-			description = COALESCE(item_description, description), grouping_id = COALESCE(item_grouping_id, grouping_id)
-		WHERE menu_item_id = item_id;
-	ELSIF item_name IS NULL OR item_price IS NULL OR item_image IS NULL OR item_description IS NULL THEN
-		RAISE EXCEPTION 'All of the required fields to create a menu item were not provided, please provide all fields.';
-	ELSE
-		INSERT INTO store.menu_item(name, price, image, description, grouping_id)
-		VALUES(item_name, item_price, item_image, item_description, item_grouping_id)
-		RETURNING menu_item_id INTO new_id;
-	END IF;
-END;
-$$;
 --{menu_item_id: SMALLINT, extra_group_id: SMALLINT, remove: boolean}
 CREATE OR REPLACE PROCEDURE store.update_item_extras(item_info JSON)
 LANGUAGE plpgsql 

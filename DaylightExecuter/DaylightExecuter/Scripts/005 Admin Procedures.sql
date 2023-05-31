@@ -102,7 +102,7 @@ BEGIN
 		DELETE FROM store.weekday_availability
 		WHERE weekday_id = ANY(remove_weekdays) AND menu_item_id = item_id;
 	END IF;
-	IF add_extra_images IS NOT NULL
+	IF add_extra_images IS NOT NULL THEN
 		INSERT INTO store.image(image_url, public_id)
 		SELECT T."imageUrl", T."publicId"
 		FROM JSON_POPULATE_RECORDSET(NULL::store.images, add_extra_images) T("publicId", "imageUrl", "displayOrder", "imageId")
