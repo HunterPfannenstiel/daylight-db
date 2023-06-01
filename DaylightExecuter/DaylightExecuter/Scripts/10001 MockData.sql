@@ -67,4 +67,11 @@ CALL store.create_order(cart_id, 1::SMALLINT, 9::SMALLINT, NOW()::DATE, order_id
 					   '[{"first_name": "Algonquin", "last_name": "Monk", "email": "alg@monkey.com", "phone_number": "(620) banana"}]'::JSON);
 CALL store.confirm_order(order_id, 124.54, 16.01, 140.55, 1::SMALLINT, '123Banana');
 END $$;
+
+DO $$
+BEGIN
+CALL store.add_user_info(2, 'Jacob', 'Younger', '(620)123-4567', true);
+CALL store.add_user_info(2, 'Jacob2', 'Younger2', 'algy', true);
+END $$;
+
 --
