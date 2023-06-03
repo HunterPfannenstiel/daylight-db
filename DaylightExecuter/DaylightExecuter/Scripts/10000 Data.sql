@@ -62,7 +62,7 @@ INSERT INTO store.menu_item (name, price, image_id, description, grouping_id) VA
 ('French Cruller', 1.19, 22, 'Treat yourself to the light, airy deliciousness of our french cruller donuts. The delicate, twisted pastry is made from the finest ingredients and fried to golden perfection. The subtle sweetness of the dough pairs perfectly with a cup of coffee or tea. Don''t miss out on the unique flavor of our french cruller donuts - grab one today!', 1);
 
 INSERT INTO store.menu_item_image(menu_item_id, image_id, display_order) VALUES
-(1, 1, 1), (2, 2, 1), (3, 3, 1), (4, 4, 1), (5, 5, 1), (6, 6, 1), (7, 7, 1);
+(1, 21, 1);
 
 ALTER SEQUENCE store.item_category_item_category_id_seq RESTART WITH 1;
 

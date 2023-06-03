@@ -67,7 +67,7 @@ BEGIN
 		SELECT *
 		FROM
 			(
-				SELECT I.image_url, I.image_id, -1 AS display_order
+				SELECT I.image_url, I.image_id, 0 AS display_order
 				FROM store.menu_item MI
 				JOIN store.image I ON I.image_id = MI.image_id
 				WHERE MI.menu_item_id = item_id
@@ -140,8 +140,3 @@ BEGIN
 	END IF;
 END;
 $func$;
-
-SELECT json_build_object(
-    'from', lower('[2023-05-15,2023-05-20)'::daterange)::text,
-    'to', upper('[2023-05-15,2023-05-20)'::daterange)::text
-) AS initial_range;

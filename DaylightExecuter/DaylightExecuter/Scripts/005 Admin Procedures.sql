@@ -131,7 +131,7 @@ BEGIN
 		MERGE INTO store.menu_item_image T
 		USING (SELECT item_id, JPR."imageId", JPR."displayOrder"
 		FROM JSON_POPULATE_RECORDSET(NULL::store.images, add_extra_images) JPR
-		WHERE JPR."imageId" IS NOT NULL) S ON (S."imageId" = T.image_id AND S.item_id = T.item_id)
+		WHERE JPR."imageId" IS NOT NULL) S ON (S."imageId" = T.image_id AND S.item_id = T.menu_item_id)
 		WHEN MATCHED THEN
 			UPDATE SET display_order = S."displayOrder"
 		WHEN NOT MATCHED THEN
@@ -147,7 +147,7 @@ BEGIN
 		SELECT array_agg(public_id) INTO removed_public_ids
 		FROM deleted_images;
 	END IF;
-	IF old_image_id IS NOT NULL THEN 
+	IF old_image_id <> display_image_id THEN 
 		IF NOT EXISTS (
 			SELECT 1 
 			FROM json_array_elements(add_extra_images) AS obj
@@ -157,6 +157,7 @@ BEGIN
 				SELECT I.public_id
 				FROM store.image I
 				WHERE I.image_id = old_image_id));
+				
 			DELETE FROM store.image
 			WHERE image_id = old_image_id;
 		END IF;
