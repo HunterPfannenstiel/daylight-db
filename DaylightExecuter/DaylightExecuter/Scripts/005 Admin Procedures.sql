@@ -128,10 +128,15 @@ BEGIN
 		FROM store.image I 
 		JOIN JSON_POPULATE_RECORDSET(NULL::store.images, add_extra_images) JPR ON JPR."publicId" = I.public_id;
 		
-		INSERT INTO store.menu_item_image(menu_item_id, image_id, display_order)
-		SELECT item_id, JPR."imageId", JPR."displayOrder"
+		MERGE INTO store.menu_item_image T
+		USING (SELECT item_id, JPR."imageId", JPR."displayOrder"
 		FROM JSON_POPULATE_RECORDSET(NULL::store.images, add_extra_images) JPR
-		WHERE JPR."imageId" IS NOT NULL;
+		WHERE JPR."imageId" IS NOT NULL) S ON (S."imageId" = T.image_id AND S.item_id = T.item_id)
+		WHEN MATCHED THEN
+			UPDATE SET display_order = S."displayOrder"
+		WHEN NOT MATCHED THEN
+			INSERT (menu_item_id, image_id, display_order)
+			VALUES(S.item_id, S."imageId", S."displayOrder");
 	END IF;
 	IF remove_extra_images IS NOT NULL THEN
 		WITH deleted_images AS (

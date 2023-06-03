@@ -27,19 +27,19 @@ END;
 $func$;
 
 CREATE OR REPLACE FUNCTION store.fetch_item_selections(item_id SMALLINT)
-RETURNS TABLE (initial_details JSON, initial_group_id SMALLINT, initial_extra_groupings JSON, initial_item_categories JSON, initial_weekdays JSON, initial_range JSON, extra_images JSON[])
+RETURNS TABLE (initial_details JSON, initial_group_id SMALLINT, initial_extra_groupings JSON, initial_item_categories JSON, initial_weekdays JSON, initial_range JSON, initial_images JSON[])
 SECURITY DEFINER
 LANGUAGE plpgsql
 AS
 $func$
 BEGIN
 	RETURN QUERY
-	SELECT json_build_object('name', MI.name, 'price', MI.price, 'description', MI.description, 'image', json_build_object('url', I.image_url, 'id', I.image_id)) AS initial_details,
+	SELECT json_build_object('name', MI.name, 'price', MI.price, 'description', MI.description) AS initial_details,
 	G.grouping_id AS initial_group_id, json_object_agg(EC.name, IEG.extra_group_id) FILTER (WHERE EC.name IS NOT NULL) AS initial_extra_groupings,
-	(SELECT * FROM store.fetch_item_initial_categories(item_id)), 
+	(SELECT * FROM store.fetch_item_initial_categories(item_id)),
 	json_object_agg(WA.weekday_id, true) FILTER (WHERE WA.weekday_id IS NOT NULL) AS initial_weekdays, 
 	CASE WHEN MI.availability_range IS NOT NULL THEN json_build_object('from', lower(MI.availability_range), 'to', upper(MI.availability_range)) ELSE NULL END AS initial_range,
-	array_agg(json_build_object('url', I2.image_url, 'id', I2.image_id, 'display_order', MII.display_order)) FILTER (WHERE I2.image_id IS NOT NULL) AS extra_images
+	(SELECT * FROM store.fetch_item_images(item_id)) 
 	FROM store.menu_item MI
 	JOIN store.image I ON I.image_id = MI.image_id
 	LEFT JOIN store.grouping G ON G.grouping_id = MI.grouping_id
@@ -50,7 +50,37 @@ BEGIN
 	LEFT JOIN store.menu_item_image MII ON MII.menu_item_id = MI.menu_item_id
 	LEFT JOIN store.image I2 ON I2.image_id = MII.image_id
 	WHERE MI.menu_item_id = item_id
-	GROUP BY MI.name, MI.price, MI.description, MI.image_id, G.grouping_id, I.image_url, I.image_id, MI.availability_range;
+	GROUP BY MI.name, MI.price, MI.description, G.grouping_id, MI.availability_range;
+END;
+$func$;
+
+CREATE OR REPLACE FUNCTION store.fetch_item_images(item_id SMALLINT)
+RETURNS TABLE (initial_images JSON[])
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT array_agg(json_build_object('imageUrl', tb.image_url, 'imageId', tb.image_id, 'displayOrder', tb.display_order))
+	FROM(
+		SELECT *
+		FROM
+			(
+				SELECT I.image_url, I.image_id, -1 AS display_order
+				FROM store.menu_item MI
+				JOIN store.image I ON I.image_id = MI.image_id
+				WHERE MI.menu_item_id = item_id
+
+				UNION ALL
+
+				SELECT I.image_url, I.image_id, MII.display_order
+				FROM store.menu_item_image MII
+				JOIN store.image I ON I.image_id = MII.image_id
+				WHERE MII.menu_item_id = item_id
+			) images
+		ORDER BY display_order
+	) tb;
 END;
 $func$;
 
