@@ -70,8 +70,8 @@ END $$;
 
 DO $$
 BEGIN
-CALL store.add_user_info(2, 'Jacob', 'Younger', '(620)123-4567', true);
-CALL store.add_user_info(2, 'Jacob2', 'Younger2', 'algy', true);
+CALL store.edit_user_info(2, 'Jacob', 'Younger', '(620)123-4567', true);
+CALL store.edit_user_info(2, 'Jacob2', 'Younger2', 'algy', true);
 END $$;
 
 --

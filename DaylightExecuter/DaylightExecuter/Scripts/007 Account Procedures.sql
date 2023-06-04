@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE store.add_user_info(
+CREATE OR REPLACE PROCEDURE store.edit_user_info(
 	info_account_id INTEGER, 
 	info_first_name TEXT DEFAULT NULL, 
 	info_last_name TEXT DEFAULT NULL, 
