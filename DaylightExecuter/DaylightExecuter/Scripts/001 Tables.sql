@@ -385,7 +385,7 @@ ALTER TABLE IF EXISTS store.menu_item_image
 	ADD FOREIGN KEY (image_id)
 	REFERENCES store.image (image_id)
 	ON UPDATE NO ACTION
-	ON DELETE NO ACTION
+	ON DELETE CASCADE
 	NOT VALID;
 
 ALTER TABLE IF EXISTS store.weekday_availability
