@@ -19,12 +19,12 @@ RETURNS TABLE (infos JSON[], favorite_id INTEGER)
 LANGUAGE plpgsql
 SECURITY DEFINER AS
 $func$
-DECLARE user_email TEXT;
+--DECLARE user_email TEXT;
 BEGIN
-	SELECT A.email INTO user_email FROM store.account A WHERE A.account_id = user_account_id;
+	--SELECT A.email INTO user_email FROM store.account A WHERE A.account_id = user_account_id;
 	RETURN QUERY
 	SELECT array_agg(json_build_object('first_name', UI.first_name, 'last_name', UI.last_name, 'phone_number', UI.phone_number, 
-									   'email', user_email, 'id', UI.user_info_id)) AS infos,
+									   'favorite', UI.is_favorited, 'id', UI.user_info_id)) AS infos,
 	(
 		SELECT UI2.user_info_id
 		FROM store.user_info UI2
