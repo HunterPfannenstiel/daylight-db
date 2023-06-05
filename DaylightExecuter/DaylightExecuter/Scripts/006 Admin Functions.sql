@@ -35,18 +35,14 @@ $func$
 BEGIN
 	RETURN QUERY
 	SELECT json_build_object('name', MI.name, 'price', MI.price, 'description', MI.description) AS initial_details,
-	G.grouping_id AS initial_group_id, json_object_agg(EC.name, IEG.extra_group_id) FILTER (WHERE EC.name IS NOT NULL) AS initial_extra_groupings,
+	G.grouping_id AS initial_group_id, (SELECT * FROM store.fetch_item_initial_extra_groupings(item_id)),
 	(SELECT * FROM store.fetch_item_initial_categories(item_id)),
-	json_object_agg(WA.weekday_id, true) FILTER (WHERE WA.weekday_id IS NOT NULL) AS initial_weekdays, 
+	(SELECT * FROM store.fetch_item_initial_weekdays(item_id)), 
 	CASE WHEN MI.availability_range IS NOT NULL THEN json_build_object('from', lower(MI.availability_range), 'to', upper(MI.availability_range)) ELSE NULL END AS initial_range,
 	(SELECT * FROM store.fetch_item_images(item_id)) 
 	FROM store.menu_item MI
 	JOIN store.image I ON I.image_id = MI.image_id
 	LEFT JOIN store.grouping G ON G.grouping_id = MI.grouping_id
-	LEFT JOIN store.item_extra_group IEG ON IEG.menu_item_id = MI.menu_item_id
-	LEFT JOIN store.extra_group EG ON EG.extra_group_id = IEG.extra_group_id
-	LEFT JOIN store.extra_category EC ON EC.extra_category_id = EG.extra_category_id
-	LEFT JOIN store.weekday_availability WA ON WA.menu_item_id = MI.menu_item_id
 	LEFT JOIN store.menu_item_image MII ON MII.menu_item_id = MI.menu_item_id
 	LEFT JOIN store.image I2 ON I2.image_id = MII.image_id
 	WHERE MI.menu_item_id = item_id
@@ -103,6 +99,36 @@ BEGIN
 		WHERE MIC.menu_item_id = item_id
 		GROUP BY MIC.item_category_id
 	) tb;
+END;
+$func$;
+
+CREATE OR REPLACE FUNCTION store.fetch_item_initial_weekdays(item_id SMALLINT)
+RETURNS TABLE (initial_weekdays JSON)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT json_object_agg(WA.weekday_id, true)
+	FROM store.weekday_availability WA 
+	WHERE WA.menu_item_id = item_id;
+END;
+$func$;
+
+CREATE OR REPLACE FUNCTION store.fetch_item_initial_extra_groupings(item_id SMALLINT)
+RETURNS TABLE (initial_weekdays JSON)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT json_object_agg(EC.name, IEG.extra_group_id)
+	FROM store.item_extra_group IEG
+	LEFT JOIN store.extra_group EG ON EG.extra_group_id = IEG.extra_group_id
+	LEFT JOIN store.extra_category EC ON EC.extra_category_id = EG.extra_category_id
+	WHERE IEG.menu_item_id = item_id;
 END;
 $func$;
 
