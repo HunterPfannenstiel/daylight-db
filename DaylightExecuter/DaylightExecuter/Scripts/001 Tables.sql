@@ -19,8 +19,8 @@ CREATE TABLE IF NOT EXISTS store."order"
 	processor_fee numeric(5, 2),
     payment_uid text,
     created_on timestamp(0) NOT NULL DEFAULT NOW(),
-    account_id integer,
     user_info_id integer,
+	account_id integer,
     PRIMARY KEY (order_id)
 );
 
@@ -150,6 +150,7 @@ CREATE TABLE IF NOT EXISTS store.extra
     name text NOT NULL,
     price numeric(4, 2),
     extra_category_id smallint,
+	abbreviation text,
     PRIMARY KEY (extra_id),
     UNIQUE (name, extra_category_id, price)
 );
@@ -289,20 +290,18 @@ ALTER TABLE IF EXISTS store."order"
 
 
 ALTER TABLE IF EXISTS store."order"
-    ADD FOREIGN KEY (account_id)
-    REFERENCES store.account (account_id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE NO ACTION
-    NOT VALID;
-
-
-ALTER TABLE IF EXISTS store."order"
     ADD FOREIGN KEY (user_info_id)
     REFERENCES store.user_info (user_info_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE NO ACTION
     NOT VALID;
-
+	
+ALTER TABLE IF EXISTS store."order"
+    ADD FOREIGN KEY (account_id)
+    REFERENCES store.account (account_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
 
 ALTER TABLE IF EXISTS store."order"
     ADD FOREIGN KEY (payment_processor_id)
@@ -321,7 +320,7 @@ ALTER TABLE IF EXISTS store."order"
 
 ALTER TABLE IF EXISTS store."order"
 	ADD CONSTRAINT customer_info_or_user_info 
-	CHECK(customer_order_info_id IS NOT NULL OR (user_info_id IS NOT NULL AND account_id IS NOT NULL));
+	CHECK(customer_order_info_id IS NOT NULL OR user_info_id IS NOT NULL);
 
 ALTER TABLE IF EXISTS store.cart_item
     ADD FOREIGN KEY (cart_id)
@@ -342,6 +341,13 @@ ALTER TABLE IF EXISTS store.cart_item
 ALTER TABLE IF EXISTS store.cart_extra
     ADD FOREIGN KEY (cart_item_id, cart_id)
     REFERENCES store.cart_item (cart_item_id, cart_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE
+    NOT VALID;
+	
+ALTER TABLE IF EXISTS store.cart_extra
+    ADD FOREIGN KEY (extra_id)
+    REFERENCES store.extra (extra_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE CASCADE
     NOT VALID;

@@ -166,3 +166,71 @@ BEGIN
 	END IF;
 END;
 $func$;
+
+--order_contents: {name, amount, breakdown: {extras: {category, extra, abbreviation}[], amount}[]}[]
+CREATE OR REPLACE FUNCTION store.fetch_orders(from_date DATE, to_date DATE)
+RETURNS TABLE (order_id INTEGER, pickup_date DATE, is_printed BOOLEAN, is_verified BOOLEAN, error_message TEXT, order_contents JSON, payment_processor TEXT, customer_info JSON, pickup_time TIME WITHOUT TIME ZONE, "location" TEXT, payment_uid TEXT)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT O.order_id, O.pickup_date, O.is_printed, O.is_verified, O.error_message, (SELECT * FROM store.fetch_order_cart(O.cart_id)),
+	PP.payment_processor, (SELECT * FROM store.fetch_order_pickup_info(O.user_info_id, O.customer_order_info_id)), PT.pickup_time, 
+	COALESCE(L.common_name, L.address) AS "location", O.payment_uid
+	FROM store.order O
+	LEFT JOIN store.payment_processor PP ON PP.payment_processor_id = O.payment_processor_id
+	JOIN store.pickup_time PT ON PT.pickup_time_id = O.pickup_time_id
+	JOIN store.location L ON L.location_Id = O.location_id
+	WHERE O.pickup_date BETWEEN from_date AND to_date;
+END;
+$func$;
+
+CREATE OR REPLACE FUNCTION store.fetch_order_cart(cart_order_id INTEGER)
+RETURNS TABLE (order_contents JSON)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT json_agg(tb)
+	FROM (
+		SELECT MI.name, SUM(CI.amount) AS amount, array_agg(json_build_object('extras', (
+			SELECT array_agg(json_build_object('category', EC.name, 'extra', E.name, 'abbreviation', E.abbreviation))
+			FROM store.cart_extra CE 
+			LEFT JOIN store.extra E ON E.extra_id = CE.extra_id
+			LEFT JOIN store.extra_category EC ON EC.extra_category_id = E.extra_category_id
+			WHERE CE.cart_id = C.cart_id AND CE.cart_item_id = CI.cart_item_id
+		), 'amount', CI.amount)) AS breakdown
+		FROM store.cart C
+		JOIN store.cart_item CI ON CI.cart_id = C.cart_id
+		JOIN store.menu_item MI ON MI.menu_item_id = CI.menu_item_id
+		WHERE C.cart_id = cart_order_id
+		GROUP BY MI.name
+	) tb;
+END;
+$func$;
+
+CREATE OR REPLACE FUNCTION store.fetch_order_pickup_info(order_user_info_id INTEGER, customer_info_id INTEGER)
+RETURNS TABLE (customer_info JSON)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	IF order_user_info_id IS NOT NULL THEN
+		RETURN QUERY
+		SELECT json_build_object('name', concat(UI.first_name, ' ', UI.last_name), 'email', A.email, 'phone_number', UI.phone_number)
+		FROM store.user_info UI
+		JOIN store.account A ON A.account_id = UI.account_id
+		WHERE UI.user_info_Id = order_user_info_id;
+	ELSE
+		RETURN QUERY
+		SELECT json_build_object('name', concat(COI.first_name, ' ', COI.last_name), 'email', COI.email, 'phone_number', COI.phone_number)
+		FROM store.customer_order_info COI
+		WHERE COI.customer_order_info_id = customer_info_id;
+	END IF;
+END;
+$func$;
