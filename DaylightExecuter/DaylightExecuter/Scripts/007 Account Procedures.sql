@@ -1,4 +1,5 @@
 CREATE OR REPLACE PROCEDURE store.edit_user_info(
+	OUT new_info_id INTEGER,
 	info_account_id INTEGER, 
 	info_first_name TEXT DEFAULT NULL, 
 	info_last_name TEXT DEFAULT NULL, 
@@ -44,7 +45,8 @@ BEGIN
 		END IF;	
 	ELSE
 		INSERT INTO store.user_info(account_id, first_name, last_name, phone_number, is_favorited)
-		VALUES(info_account_id, info_first_name, info_last_name, info_phone_number, favorite);
+		VALUES(info_account_id, info_first_name, info_last_name, info_phone_number, favorite)
+		RETURNING user_info_id INTO new_info_id;
 	END IF;
 END;
 $$;
