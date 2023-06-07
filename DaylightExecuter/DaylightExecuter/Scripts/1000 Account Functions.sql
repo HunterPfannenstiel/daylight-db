@@ -24,13 +24,16 @@ BEGIN
 	--SELECT A.email INTO user_email FROM store.account A WHERE A.account_id = user_account_id;
 	RETURN QUERY
 	SELECT array_agg(json_build_object('first_name', UI.first_name, 'last_name', UI.last_name, 'phone_number', UI.phone_number, 
-									   'favorite', UI.is_favorited, 'id', UI.user_info_id)) AS infos,
+									   'favorite', UI.is_favorited, 'id', UI.user_info_id) ORDER BY UI.user_info_id) AS infos,
 	(
 		SELECT UI2.user_info_id
 		FROM store.user_info UI2
 		WHERE UI2.is_favorited = true
+			AND UI2.account_id = user_account_id
 	) AS favorite_id
 	FROM store.user_info UI
 	WHERE UI.account_id = user_account_id;
 END;
 $func$;
+
+SELECT * FROM store.get_user_infos(2)
