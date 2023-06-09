@@ -40,7 +40,8 @@ BEGIN
 				is_favorited = COALESCE(favorite, is_favorited)
 			WHERE user_info_id = info_id;
 		ELSE
-			DELETE FROM store.user_info
+			UPDATE store.user_info
+			SET is_archived = true
 			WHERE user_info_id = info_id;
 		END IF;	
 	ELSE
