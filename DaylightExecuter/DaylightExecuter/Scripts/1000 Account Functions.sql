@@ -30,10 +30,10 @@ BEGIN
 		FROM store.user_info UI2
 		WHERE UI2.is_favorited = true
 			AND UI2.account_id = user_account_id
+			AND UI2.is_archived = false
 	) AS favorite_id
 	FROM store.user_info UI
-	WHERE UI.account_id = user_account_id;
+	WHERE UI.account_id = user_account_id
+		AND UI.is_archived = false;
 END;
 $func$;
-
-SELECT * FROM store.get_user_infos(2)

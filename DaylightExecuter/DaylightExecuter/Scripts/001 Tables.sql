@@ -234,6 +234,7 @@ CREATE TABLE IF NOT EXISTS store.user_info
     last_name text NOT NULL,
     phone_number text NOT NULL,
 	is_favorited boolean NOT NULL DEFAULT false,
+	is_archived boolean NOT NULL DEFAULT false,
     PRIMARY KEY (user_info_id)
 );
 
