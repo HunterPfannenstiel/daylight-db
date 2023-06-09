@@ -22,7 +22,7 @@ CALL store.create_account('jstarz@monkey.com', acc_id,
 
 SELECT UI.user_info_id INTO info_id FROM store.user_info UI WHERE UI.account_id = acc_id;
 
-CALL store.create_order(cart_id, 1::SMALLINT, 9::SMALLINT, NOW()::DATE, order_id, NULL, acc_id, info_id);
+CALL store.create_order(cart_id, 2::SMALLINT, 9::SMALLINT, NOW()::DATE, order_id, NULL, acc_id, info_id);
 CALL store.confirm_order(order_id, 124.54, 16.01, 140.55, 1::SMALLINT, '123Banana');
 END $$;
 
@@ -60,7 +60,7 @@ DECLARE order_id INTEGER;
 BEGIN
 CALL store.create_cart(cart_id, '[{"cart_item_id": 1, "menu_item_id": 1, "amount": 12, "extra_ids": [2, 12]}, 
 					   {"cart_item_id": 2, "menu_item_id": 1, "amount": 12, "extra_ids": [9, 11]}, 
-					   {"cart_item_id": 3, "menu_item_id": 1, "amount": 12, "extra_ids": [9]},
+					   {"cart_item_id": 3, "menu_item_id": 1, "amount": 12, "extra_ids": [8]},
 					   {"cart_item_id": 4, "menu_item_id": 1, "amount": 12}]');
 
 CALL store.create_order(cart_id, 1::SMALLINT, 9::SMALLINT, NOW()::DATE, order_id, 
@@ -70,8 +70,8 @@ END $$;
 
 DO $$
 BEGIN
-CALL store.edit_user_info(null, 2, 'Jacob', 'Younger', '(620)123-4567', true);
-CALL store.edit_user_info(null, 2, 'Jacob2', 'Younger2', 'algy', true);
+CALL store.edit_user_info(NULL, 2, 'Jacob', 'Younger', '(620)123-4567', true);
+CALL store.edit_user_info(NULL, 2, 'Jacob2', 'Younger2', 'algy', true);
 END $$;
 
 --

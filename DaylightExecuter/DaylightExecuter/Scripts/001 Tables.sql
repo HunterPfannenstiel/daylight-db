@@ -151,6 +151,7 @@ CREATE TABLE IF NOT EXISTS store.extra
     price numeric(4, 2),
     extra_category_id smallint,
 	abbreviation text,
+	is_archived boolean NOT NULL DEFAULT false,
     PRIMARY KEY (extra_id),
     UNIQUE (name, extra_category_id, price)
 );

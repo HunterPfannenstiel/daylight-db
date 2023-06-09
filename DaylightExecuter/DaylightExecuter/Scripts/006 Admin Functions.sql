@@ -169,16 +169,16 @@ $func$;
 
 --order_contents: {name, amount, breakdown: {extras: {category, extra, abbreviation}[], amount}[]}[]
 CREATE OR REPLACE FUNCTION store.fetch_orders(from_date DATE, to_date DATE)
-RETURNS TABLE (order_id INTEGER, pickup_date DATE, is_printed BOOLEAN, is_verified BOOLEAN, error_message TEXT, order_contents JSON, payment_processor TEXT, customer_info JSON, pickup_time TIME WITHOUT TIME ZONE, "location" TEXT, payment_uid TEXT)
+RETURNS TABLE (order_id INTEGER, pickup_date TEXT, created_on TEXT, is_printed BOOLEAN, is_verified BOOLEAN, error_message TEXT, order_contents JSON, payment_processor TEXT, customer_info JSON, pickup_time TEXT, "location" TEXT, payment_uid TEXT, price_details JSON)
 SECURITY DEFINER
 LANGUAGE plpgsql
 AS
 $func$
 BEGIN
 	RETURN QUERY
-	SELECT O.order_id, O.pickup_date, O.is_printed, O.is_verified, O.error_message, (SELECT * FROM store.fetch_order_cart(O.cart_id)),
-	PP.payment_processor, (SELECT * FROM store.fetch_order_pickup_info(O.user_info_id, O.customer_order_info_id)), PT.pickup_time, 
-	COALESCE(L.common_name, L.address) AS "location", O.payment_uid
+	SELECT O.order_id, to_char(O.pickup_date, 'FMDay, FMMonth FMDD') AS pickup_date, to_char(O.created_on, 'FMDay, FMMonth FMDD') AS created_on, O.is_printed, O.is_verified, O.error_message, (SELECT * FROM store.fetch_order_cart(O.cart_id)),
+	PP.payment_processor, (SELECT * FROM store.fetch_order_pickup_info(O.user_info_id, O.customer_order_info_id)), to_char(PT.pickup_time, 'FMHH12:MI AM') AS pickup_time,
+	COALESCE(L.common_name, L.address) AS "location", O.payment_uid, json_build_object('subtotal', O.subtotal, 'tax', O.tax, 'processor_fee', O.processor_fee) AS price_details
 	FROM store.order O
 	LEFT JOIN store.payment_processor PP ON PP.payment_processor_id = O.payment_processor_id
 	JOIN store.pickup_time PT ON PT.pickup_time_id = O.pickup_time_id
@@ -234,3 +234,5 @@ BEGIN
 	END IF;
 END;
 $func$;
+
+SELECT * FROM store.fetch_orders('2023-06-07', '2023-06-7');
