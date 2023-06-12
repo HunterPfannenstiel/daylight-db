@@ -359,3 +359,70 @@ BEGIN
 	ORDER BY IC.display_order ASC;
 END;
 $func$;
+--END OF CATEGORY FUNCTIONS
+
+CREATE OR REPLACE FUNCTION store.get_user_role(user_email TEXT)
+RETURNS TABLE ("role" TEXT)
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT R.role
+	FROM(
+		SELECT A.email, 'team member' AS "role"
+		FROM store.team_member A
+
+		UNION
+
+		SELECT O.email, 'owner' AS "role"
+		FROM store.owner O
+	) R
+	WHERE R.email = user_email;
+	
+	IF NOT FOUND THEN
+		RETURN QUERY SELECT 'customer';
+	END IF;
+END;
+$func$;
+
+DROP FUNCTION IF EXISTS store.get_user_roles;
+CREATE OR REPLACE FUNCTION store.get_user_roles(user_email TEXT)
+RETURNS TABLE ("role" TEXT)
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT R.title
+	FROM store.team_member TM
+	JOIN store.team_member_role TMR ON TMR.team_member_id = TM.team_member_id
+	JOIN store.role R ON R.role_id = TMR.role_id
+	WHERE TM.email = user_email;
+END;
+$func$;
+
+CREATE OR REPLACE FUNCTION store.check_user_role(user_email TEXT, required_role_ids SMALLINT[])
+RETURNS VOID
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
+$func$
+BEGIN
+	IF NOT EXISTS (
+		SELECT 1
+		FROM store.owner O
+		WHERE O.email = user_email
+	) THEN
+		IF NOT EXISTS (
+			SELECT 1
+			FROM store.team_member_role TMR
+			JOIN store.team_member TM ON TM.team_member_id = TMR.team_member_id
+			WHERE TMR.role_id = ANY(required_role_ids) AND TM.email = user_email
+		) THEN
+			RAISE EXCEPTION 'User does not have permission to perform this action.';
+		END IF;
+	END IF;
+END;
+$func$;
+
+--SELECT FROM store.check_user_role('hunterstatek@gmail.com', ARRAY[1, 2]::SMALLINT[])

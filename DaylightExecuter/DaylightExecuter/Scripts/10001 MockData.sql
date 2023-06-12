@@ -68,3 +68,26 @@ CALL store.create_order(cart_id, 1::SMALLINT, 9::SMALLINT, NOW()::DATE, order_id
 CALL store.confirm_order(order_id, 124.54, 16.01, 140.55, 1::SMALLINT, '123Banana');
 END $$;
 --
+
+--Admin mock data
+INSERT INTO store.owner(email, "password")
+VALUES('daylightdonutdeveloper@gmail.com', '123donut');
+
+ALTER SEQUENCE store.team_member_team_member_id_seq RESTART WITH 1;
+
+INSERT INTO store.team_member(email)
+VALUES('hunterstatek@gmail.com'),
+('pfannenstielhunter@gmail.com');
+
+INSERT INTO store.team_member_password("password")
+VALUES('donut');
+
+ALTER SEQUENCE store.role_role_id_seq RESTART WITH 1;
+
+INSERT INTO store.role(title, description)
+VALUES('Co-owner', 'The same permissions as the owner but without the ability to add new admins.'),
+('Overnight', 'Grants the permission to view and print orders.');
+
+INSERT INTO store.team_member_role(team_member_id, role_id)
+VALUES(1, 1),
+(2, 2);

@@ -532,4 +532,48 @@ CREATE OR REPLACE VIEW store.vw_menu_item_details AS
 	FROM store.menu_item MI
 	JOIN store.image I ON I.image_id = MI.image_id
 	WHERE MI.is_active = true;
+	
+CREATE TABLE IF NOT EXISTS store.owner(
+	email text NOT NULL,
+	"password" text NOT NULL,
+	PRIMARY KEY (email)
+);
+
+CREATE TABLE IF NOT EXISTS store.team_member(
+	team_member_id smallserial NOT NULL,
+	email text NOT NULL,
+	PRIMARY KEY (team_member_id)
+);
+
+CREATE TABLE IF NOT EXISTS store.role(
+	role_id smallserial NOT NULL,
+	title text NOT NULL,
+	description text NOT NULL,
+	PRIMARY KEY (role_id)
+);
+
+CREATE TABLE IF NOT EXISTS store.team_member_role(
+	team_member_id smallint NOT NULL,
+	role_id smallint NOT NULL,
+	PRIMARY KEY (team_member_id, role_id)
+);
+
+CREATE TABLE IF NOT EXISTS store.team_member_password(
+	"password" text NOT NULL,
+	PRIMARY KEY ("password")
+);
+
+ALTER TABLE IF EXISTS store.team_member_role
+    ADD FOREIGN KEY (team_member_id)
+    REFERENCES store.team_member (team_member_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE
+    NOT VALID;
+	
+ALTER TABLE IF EXISTS store.team_member_role
+    ADD FOREIGN KEY (role_id)
+    REFERENCES store.role (role_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
 END;
