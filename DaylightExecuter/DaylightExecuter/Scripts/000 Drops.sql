@@ -68,6 +68,7 @@ DROP FUNCTION IF EXISTS store.fetch_order_pickup_info;
 DROP FUNCTION IF EXISTS store.get_user_role;
 DROP FUNCTION IF EXISTS store.get_user_roles;
 DROP FUNCTION IF EXISTS store.check_user_role;
+DROP FUNCTION IF EXISTS store.get_user_password;
 DROP PROCEDURE IF EXISTS store.check_cart_lock;
 DROP PROCEDURE IF EXISTS store.update_cart;
 DROP PROCEDURE IF EXISTS store.create_cart;

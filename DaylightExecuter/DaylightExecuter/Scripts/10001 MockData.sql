@@ -71,7 +71,8 @@ END $$;
 
 --Admin mock data
 INSERT INTO store.owner(email, "password")
-VALUES('daylightdonutdeveloper@gmail.com', '123donut');
+VALUES('daylightdonutdeveloper@gmail.com', '$2b$12$ukxiJkEiWRg4.SqcFRrk7.tMSM5PMXJGlWH0OFYexnQ.6opHxBCDa');
+--123donut
 
 ALTER SEQUENCE store.team_member_team_member_id_seq RESTART WITH 1;
 
@@ -80,7 +81,8 @@ VALUES('hunterstatek@gmail.com'),
 ('pfannenstielhunter@gmail.com');
 
 INSERT INTO store.team_member_password("password")
-VALUES('donut');
+VALUES('$2b$12$72lo1qeGHUINKt3rfwiwweXAmuV848Xo2u1ZGxrero8GFP/r71.RC');
+--donut
 
 ALTER SEQUENCE store.role_role_id_seq RESTART WITH 1;
 

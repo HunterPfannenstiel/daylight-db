@@ -426,3 +426,25 @@ END;
 $func$;
 
 --SELECT FROM store.check_user_role('hunterstatek@gmail.com', ARRAY[1, 2]::SMALLINT[])
+
+CREATE OR REPLACE FUNCTION store.get_user_password(user_email TEXT)
+RETURNS TABLE (hashed_password TEXT)
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
+$func$
+DECLARE hashed_password TEXT;
+BEGIN
+	SELECT O.password INTO hashed_password FROM store.owner O WHERE O.email = user_email;
+	
+	IF hashed_password IS NULL THEN
+		SELECT TMP.password INTO hashed_password 
+		FROM store.team_member_password TMP
+		WHERE EXISTS (
+			SELECT 1
+			FROM store.team_member TM
+			WHERE TM.email = user_email
+		);
+	END IF;
+	RETURN QUERY SELECT hashed_password;
+END;
+$func$;
