@@ -94,7 +94,7 @@ BEGIN
 	RETURN QUERY
 	SELECT json_agg(tb) AS extras 
 	FROM (
-		SELECT json_build_object('category', EC.name, 'extras', json_agg(json_strip_nulls(json_build_object('name', E.name, 'price', E.price, 'id', E.extra_id)) ORDER BY EGE.order_value)) AS extras
+		SELECT json_build_object('category', EC.name, 'extras', json_agg(json_strip_nulls(json_build_object('name', E.name, 'price', E.price, 'id', E.extra_id)) ORDER BY EGE.order_value)) AS "group"
 		FROM store.item_extra_group IEG
 		LEFT JOIN store.extra_group_extra EGE ON EGE.extra_group_id = IEG.extra_group_id
 		LEFT JOIN store.extra E ON E.extra_id = EGE.extra_id AND E.price IS NULL
@@ -102,7 +102,7 @@ BEGIN
 		WHERE IEG.menu_item_id = item_id
 		GROUP BY EC.name
 	) tb
-	WHERE (tb.extras->>'category') IS NOT NULL;
+	WHERE (tb."group"->>'category') IS NOT NULL;
 END;
 $func$;
 
