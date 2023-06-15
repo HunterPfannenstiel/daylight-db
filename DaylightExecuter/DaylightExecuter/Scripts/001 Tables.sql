@@ -138,7 +138,7 @@ CREATE TABLE IF NOT EXISTS store.item_subcategory
 
 CREATE TABLE IF NOT EXISTS store.extra_category
 (
-    extra_category_id serial NOT NULL,
+    extra_category_id smallserial NOT NULL,
     name text NOT NULL,
     PRIMARY KEY (extra_category_id),
     UNIQUE (name)

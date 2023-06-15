@@ -236,3 +236,326 @@ END;
 $func$;
 
 SELECT * FROM store.fetch_orders('2023-06-07', '2023-06-7');
+
+--Extras
+CREATE OR REPLACE FUNCTION store.view_menu_items(page SMALLINT, page_size SMALLINT, search_term TEXT DEFAULT NULL)
+RETURNS TABLE ("id" SMALLINT, "name" TEXT)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT MI.menu_item_id, MI.name
+	FROM store.menu_item MI
+	WHERE search_term IS NULL OR MI.name ILIKE '%' || search_term || '%'
+	ORDER BY MI.menu_item_id
+	OFFSET (page * page_size) ROWS
+	FETCH FIRST page_size ROW ONLY;
+END;
+$func$;
+
+SELECT * FROM store.view_menu_items(0::SMALLINT, 10::SMALLINT);
+CREATE OR REPLACE FUNCTION store.view_extras()
+RETURNS TABLE (category TEXT, extras JSON[])
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT EC.name, array_agg(json_build_object('name', E.name, 'id', E.extra_id))
+	FROM store.extra E
+	JOIN store.extra_category EC ON EC.extra_category_id = E.extra_category_id
+	GROUP BY EC.name;
+END;
+$func$;
+
+SELECT * FROM store.view_extras();
+
+CREATE OR REPLACE FUNCTION store.fetch_extra_selections("id" SMALLINT)
+RETURNS TABLE (initial_category_id SMALLINT, initial_groups JSON)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT E.extra_category_id, json_object_agg(EGE.extra_group_id, true) FILTER (WHERE EGE.extra_group_id IS NOT NULL)
+	FROM store.extra E
+	JOIN store.extra_group_extra EGE ON EGE.extra_id = E.extra_id
+	WHERE E.extra_id = "id"
+	GROUP BY E.extra_category_id;
+END;
+$func$;
+
+SELECT * FROM store.fetch_extra_selections(1::SMALLINT);
+
+CREATE OR REPLACE FUNCTION store.view_extra_categories()
+RETURNS TABLE ("id" SMALLINT, "name" TEXT)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT EC.extra_category_id, EC.name
+	FROM store.extra_category EC;
+END;
+$func$;
+
+SELECT * FROM store.view_extra_categories();
+
+CREATE OR REPLACE FUNCTION store.view_extra_groups()
+RETURNS TABLE ("id" SMALLINT, "name" TEXT, extra_category_id SMALLINT)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT EG.extra_group_id, EG.name, EG.extra_category_id
+	FROM store.extra_group EG;
+END;
+$func$;
+
+SELECT * FROM store.view_extra_groups();
+
+CREATE OR REPLACE FUNCTION store.fetch_extra_customizations()
+RETURNS TABLE (categories JSON, "groups" JSON)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT (SELECT json_agg(tb) FROM store.view_extra_categories() tb), (SELECT json_agg(tb) FROM store.view_extra_groups() tb);
+END;
+$func$;
+
+SELECT * FROM store.fetch_extra_customizations();
+--End of Extras
+
+--Extra Groups
+CREATE OR REPLACE FUNCTION store.fetch_extra_group_selections("id" SMALLINT)
+RETURNS TABLE (initial_extras JSON, initial_items JSON, initial_category_id SMALLINT)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT (SELECT json_object_agg(EGE.extra_id, true) FROM store.extra_group_extra EGE WHERE EGE.extra_group_id = EG.extra_group_id), 
+		(SELECT json_object_agg(IEG.menu_item_id, true) FROM store.item_extra_group IEG WHERE IEG.extra_group_id = EG.extra_group_id ), 
+		EG.extra_category_id
+	FROM store.extra_group EG
+	WHERE EG.extra_group_id = "id";
+END;
+$func$;
+
+SELECT * FROM store.fetch_extra_group_selections(1::SMALLINT);
+
+CREATE OR REPLACE FUNCTION store.fetch_extra_group_customizations(page_size SMALLINT)
+RETURNS TABLE (categories JSON, items JSON, extras JSON)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT (SELECT json_agg(tb) FROM store.view_extra_categories() tb), (SELECT json_agg(tb) FROM store.view_menu_items(0::SMALLINT, page_size) tb),
+	(SELECT json_agg(tb) FROM store.view_extras() tb);
+END;
+$func$;
+
+SELECT * FROM store.fetch_extra_group_customizations(10::SMALLINT);
+--End of Extra Groups
+
+--Item Categories/Subcategories
+CREATE OR REPLACE FUNCTION store.view_category_initial_items(category_id SMALLINT DEFAULT NULL, subcategory_id SMALLINT DEFAULT NULL)
+RETURNS TABLE (initial_selections JSON)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	IF category_id IS NOT NULL THEN
+		RETURN QUERY
+		SELECT json_object_agg(MIC.menu_item_id, true)
+		FROM store.item_category IC
+		JOIN store.menu_item_category MIC ON MIC.item_category_id = IC.item_category_id
+		WHERE IC.item_category_id = category_id;
+	ELSE
+		RETURN QUERY
+		SELECT json_object_agg(MIS.menu_item_id, true)
+		FROM store.item_subcategory ISC
+		JOIN store.menu_item_subcategory MIS ON MIS.item_subcategory_id = ISC.item_subcategory_id
+		WHERE ISC.item_subcategory_id = subcategory_id;
+	END IF;
+END;
+$func$;
+
+SELECT * FROM store.view_category_initial_items(NULL, 1::SMALLINT);
+
+CREATE OR REPLACE FUNCTION store.view_item_categories()
+RETURNS TABLE ("id" SMALLINT, "name" TEXT)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT IC.item_category_id, IC.name
+	FROM store.item_category IC
+	ORDER BY IC.display_order;
+END;
+$func$;
+
+SELECT * FROM store.view_item_categories();
+
+CREATE OR REPLACE FUNCTION store.view_item_subcategories()
+RETURNS TABLE ("id" SMALLINT, "name" TEXT)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT "IS".item_subcategory_id, "IS".name
+	FROM store.item_subcategory "IS";
+END;
+$func$;
+
+SELECT * FROM store.view_item_subcategories();
+
+CREATE OR REPLACE FUNCTION store.fetch_item_category_selections("id" SMALLINT)
+RETURNS TABLE (initial_subcategories JSON, initial_items JSON, is_active BOOLEAN)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT (SELECT json_object_agg("IS".item_subcategory_id, true) FROM store.item_subcategory "IS" WHERE "IS".item_category_id = "id"),
+	(SELECT * FROM store.view_category_initial_items("id")), IC.is_active
+	FROM store.item_category IC
+	WHERE IC.item_category_id = "id";
+END;
+$func$;
+
+SELECT * FROM store.fetch_item_category_selections(1::SMALLINT);
+
+CREATE OR REPLACE FUNCTION store.fetch_item_subcategory_selections("id" SMALLINT)
+RETURNS TABLE (initial_category SMALLINT, initial_items JSON, is_active BOOLEAN)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT "IS".item_category_id,
+	(SELECT * FROM store.view_category_initial_items(NULL, "id")), "IS".is_active
+	FROM store.item_subcategory "IS"
+	WHERE "IS".item_subcategory_id = "id";
+END;
+$func$;
+
+SELECT * FROM store.fetch_item_subcategory_selections(1::SMALLINT);
+
+CREATE OR REPLACE FUNCTION store.fetch_item_category_customizations(page_size SMALLINT)
+RETURNS TABLE (items JSON, subcategories JSON)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT (SELECT json_agg(tb) FROM store.view_menu_items(0::SMALLINT, page_size) tb), (SELECT json_agg(tb) FROM store.view_item_subcategories() tb);
+END;
+$func$;
+
+SELECT * FROM store.fetch_item_category_customizations(10::SMALLINT);
+
+CREATE OR REPLACE FUNCTION store.view_menu_items_in_category(category_id SMALLINT)
+RETURNS TABLE ("id" SMALLINT, "name" TEXT)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT MI.menu_item_id, MI.name
+	FROM store.menu_item_category MIC
+	JOIN store.menu_item MI ON MI.menu_item_id = MIC.menu_item_id
+	WHERE MIC.item_category_id = category_id;
+END;
+$func$;
+
+SELECT * FROM store.view_menu_items_in_category(1::SMALLINT);
+
+CREATE OR REPLACE FUNCTION store.fetch_item_subcategory_customizations()
+RETURNS TABLE (categories JSON)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT json_agg(tb) FROM store.view_item_categories() tb;
+END;
+$func$;
+
+SELECT * FROM store.fetch_item_subcategory_customizations();
+--End of Item Categories/Subcategories
+
+--Item Groupings
+CREATE OR REPLACE FUNCTION store.view_item_groupings()
+RETURNS TABLE ("id" SMALLINT, "name" TEXT)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT G.grouping_id, G.name
+	FROM store.grouping G;
+END;
+$func$;
+
+SELECT * FROM store.view_item_groupings();
+
+CREATE OR REPLACE FUNCTION store.view_item_grouping_items(page SMALLINT, page_size SMALLINT)
+RETURNS TABLE ("id" SMALLINT, "name" TEXT, is_in_grouping BOOLEAN)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT MI.menu_item_id AS "id", MI.name, CASE WHEN MI.grouping_id IS NOT NULL THEN false ELSE true END
+	FROM store.menu_item MI
+	OFFSET (page * page_size) ROWS
+	FETCH FIRST page_size ROW ONLY;
+END;
+$func$;
+
+SELECT * FROM store.view_item_grouping_items(0::SMALLINT, 10::SMALLINT);
+
+CREATE OR REPLACE FUNCTION store.view_item_grouping_selections("id" SMALLINT)
+RETURNS TABLE (items JSON, price NUMERIC(4,2), "size" SMALLINT, image TEXT, is_active BOOLEAN)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT (SELECT json_object_agg(MI.menu_item_id, true) FROM store.menu_item MI WHERE MI.grouping_id = G.grouping_id),
+	G.price, G.size, I.image_url, G.is_active
+	FROM store.grouping G
+	JOIN store.image I ON I.image_id = G.image_id
+	WHERE G.grouping_id = "id";
+END;
+$func$;
+
+SELECT * FROM store.view_item_grouping_selections(1::SMALLINT);
+--End of Item Groupings
