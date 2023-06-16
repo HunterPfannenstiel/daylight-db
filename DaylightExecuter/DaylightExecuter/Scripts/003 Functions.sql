@@ -94,11 +94,12 @@ BEGIN
 	RETURN QUERY
 	SELECT json_agg(tb) AS extras 
 	FROM (
-		SELECT json_build_object('category', EC.name, 'extras', json_agg(json_strip_nulls(json_build_object('name', E.name, 'price', E.price, 'id', E.extra_id)) ORDER BY EGE.order_value)) AS "group"
+		SELECT json_build_object('category', EC.name, 'extras', json_agg(json_strip_nulls(json_build_object('name', E.name, 'price', E.price, 'id', E.extra_id)) ORDER BY EGE.display_order)) AS "group"
 		FROM store.item_extra_group IEG
 		LEFT JOIN store.extra_group_extra EGE ON EGE.extra_group_id = IEG.extra_group_id
-		LEFT JOIN store.extra E ON E.extra_id = EGE.extra_id AND E.price IS NULL
-		LEFT JOIN store.extra_category EC ON EC.extra_category_id = E.extra_category_id
+		LEFT JOIN store.extra E ON E.extra_id = EGE.extra_id
+		LEFT JOIN store.extra_group EG ON EG.extra_group_id = IEG.extra_group_id
+		LEFT JOIN store.extra_category EC ON EC.extra_category_id = EG.extra_category_id
 		WHERE IEG.menu_item_id = item_id
 		GROUP BY EC.name
 	) tb

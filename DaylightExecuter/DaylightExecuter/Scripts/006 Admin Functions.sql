@@ -256,6 +256,7 @@ END;
 $func$;
 
 SELECT * FROM store.view_menu_items(0::SMALLINT, 10::SMALLINT);
+
 CREATE OR REPLACE FUNCTION store.view_extras()
 RETURNS TABLE (category TEXT, extras JSON[])
 SECURITY DEFINER
@@ -274,18 +275,18 @@ $func$;
 SELECT * FROM store.view_extras();
 
 CREATE OR REPLACE FUNCTION store.fetch_extra_selections("id" SMALLINT)
-RETURNS TABLE (initial_category_id SMALLINT, initial_groups JSON)
+RETURNS TABLE (initial_category_id SMALLINT, initial_groups JSON, initial_abbreviation TEXT)
 SECURITY DEFINER
 LANGUAGE plpgsql
 AS
 $func$
 BEGIN
 	RETURN QUERY
-	SELECT E.extra_category_id, json_object_agg(EGE.extra_group_id, true) FILTER (WHERE EGE.extra_group_id IS NOT NULL)
+	SELECT E.extra_category_id, json_object_agg(EGE.extra_group_id, true) FILTER (WHERE EGE.extra_group_id IS NOT NULL), E.abbreviation
 	FROM store.extra E
 	JOIN store.extra_group_extra EGE ON EGE.extra_id = E.extra_id
 	WHERE E.extra_id = "id"
-	GROUP BY E.extra_category_id;
+	GROUP BY E.extra_category_id, E.abbreviation;
 END;
 $func$;
 
@@ -355,6 +356,27 @@ $func$;
 
 SELECT * FROM store.fetch_extra_group_selections(1::SMALLINT);
 
+CREATE OR REPLACE FUNCTION store.view_menu_items_with_extra_group_ids(page SMALLINT, page_size SMALLINT, search_term TEXT DEFAULT NULL)
+RETURNS TABLE ("id" SMALLINT, "name" TEXT, extra_group_ids SMALLINT[])
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT MI.menu_item_id, MI.name, array_agg(IEG.extra_group_id)
+	FROM store.menu_item MI
+	JOIN store.item_extra_group IEG ON IEG.menu_item_id = MI.menu_item_id
+	WHERE search_term IS NULL OR MI.name ILIKE '%' || search_term || '%'
+	GROUP BY MI.menu_item_id, MI.name
+	ORDER BY MI.menu_item_id
+	OFFSET (page * page_size) ROWS
+	FETCH FIRST page_size ROW ONLY;
+END;
+$func$;
+
+SELECT * FROM store.view_menu_items_with_extra_group_ids(0::SMALLINT, 10::SMALLINT);
+
 CREATE OR REPLACE FUNCTION store.fetch_extra_group_customizations(page_size SMALLINT)
 RETURNS TABLE (categories JSON, items JSON, extras JSON)
 SECURITY DEFINER
@@ -363,7 +385,7 @@ AS
 $func$
 BEGIN
 	RETURN QUERY
-	SELECT (SELECT json_agg(tb) FROM store.view_extra_categories() tb), (SELECT json_agg(tb) FROM store.view_menu_items(0::SMALLINT, page_size) tb),
+	SELECT (SELECT json_agg(tb) FROM store.view_extra_categories() tb), (SELECT json_agg(tb) FROM store.view_menu_items_with_extra_group_ids(0::SMALLINT, page_size) tb),
 	(SELECT json_agg(tb) FROM store.view_extras() tb);
 END;
 $func$;

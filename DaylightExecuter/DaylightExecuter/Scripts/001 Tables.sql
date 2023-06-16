@@ -133,7 +133,7 @@ CREATE TABLE IF NOT EXISTS store.item_subcategory
     name text NOT NULL,
     is_active boolean NOT NULL DEFAULT true,
     PRIMARY KEY (item_subcategory_id),
-    UNIQUE (name)
+    UNIQUE (name, item_category_id)
 );
 
 CREATE TABLE IF NOT EXISTS store.extra_category
@@ -183,9 +183,9 @@ CREATE TABLE IF NOT EXISTS store.extra_group_extra
 (
     extra_id smallint NOT NULL,
     extra_group_id smallint NOT NULL,
-	order_value smallint,
+	display_order smallint,
     PRIMARY KEY (extra_id, extra_group_id),
-	UNIQUE(extra_group_id, order_value)
+	UNIQUE(extra_group_id, display_order)
 );
 
 CREATE TABLE IF NOT EXISTS store.item_extra_group

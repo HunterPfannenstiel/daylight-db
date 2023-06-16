@@ -24,3 +24,18 @@ CREATE TYPE store.images AS (
 	"displayOrder" SMALLINT,
 	"imageId" INTEGER
 );
+
+CREATE TYPE store.extra_group_info AS (
+	"extraGroupId" SMALLINT,
+	"displayOrder" SMALLINT
+);
+
+CREATE TYPE store.extras_info AS (
+	"extraId" SMALLINT,
+	"displayOrder" SMALLINT
+);
+
+CREATE TYPE store.item_infos AS (
+	"itemId" SMALLINT,
+	"subcategory" TEXT
+);

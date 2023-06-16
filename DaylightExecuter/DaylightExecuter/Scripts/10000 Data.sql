@@ -173,7 +173,6 @@ INSERT INTO store.extra (name, price, extra_category_id) VALUES
 ('Apple', 0.10, 3),
 ('Strawberry Cream Cheese', 0.10, 3),
 
-
 ('Cheddar', NULL, 4),
 ('Jalapeno', NULL, 4),
 
@@ -197,8 +196,7 @@ INSERT INTO store.extra_group (extra_category_id, name) VALUES
 (5, 'Sandwich Types'), 
 (6, 'Biscuits and Gravy Sizes');
 
-INSERT INTO store.extra_group_extra (extra_group_id, extra_id, order_value) VALUES 
-(1, 1, 1), 
+INSERT INTO store.extra_group_extra (extra_group_id, extra_id, display_order) VALUES 
 (1, 2, NULL), 
 (1, 3, NULL), 
 (1, 4, NULL), 
@@ -208,7 +206,6 @@ INSERT INTO store.extra_group_extra (extra_group_id, extra_id, order_value) VALU
 (1, 9, NULL), 
 (1, 10, NULL), 
 
-(2, 1, 1),
 (2, 8, NULL), 
 
 (3, 11, NULL), 
