@@ -29,4 +29,17 @@ CALL store.modify_extra_category(14::SMALLINT, '[{"name": "Cream Three"}]', ARRA
 CALL store.create_item_category('New Category', NULL, '[{"name": "New Subb Cat"}]', '[{"itemId": 1, "subcategory": "New Subb Cat"}]', NULL);
 
 CALL store.create_item_subcategory('Goods', 1::SMALLINT, ARRAY[15, 16]::SMALLINT[], NULL);
+
+CALL store.modify_item_subcategory(1::SMALLINT, NULL, NULL, ARRAY[16]::SMALLINT[], ARRAY[1, 6]::SMALLINT[]);
+
+CALL store.modify_item_category(1::SMALLINT, NULL, NULL, NULL, NULL, ARRAY[3]::SMALLINT[], NULL, ARRAY[16, 5]::SMALLINT[]);
+SELECT * FROM store.menu_item_category MIC WHERE MIC.item_category_id = 1
+SELECT * FROM store.item_subcategory "IS" WHERE "IS".item_category_id = 1
+SELECT * FROM store.menu_item_subcategory MIS WHERE MIS.item_subcategory_id = 3;
+--
+
+--Create grouping
+CALL store.create_item_grouping('Test Grouping', 10.12, 3::SMALLINT, '{"imageUrl": "hello", "publicId": "123EE"}', ARRAY[1, 15]::SMALLINT[], NULL);
+
+CALL store.modify_item_grouping(3::SMALLINT, 'Test', 9.00, 2::SMALLINT, '{"imageUrl": "ooo", "publicId": "eee"}', NULL, ARRAY[2]::SMALLINT[], ARRAY[15]::SMALLINT[], NULL);
 --

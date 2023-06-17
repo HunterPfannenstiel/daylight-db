@@ -1,3 +1,14 @@
+CREATE OR REPLACE PROCEDURE store.add_new_image(image JSON, new_image_id OUT INTEGER)
+LANGUAGE plpgsql
+SECURITY DEFINER AS
+$$
+BEGIN
+	INSERT INTO store.image(image_url, public_id)
+	VALUES (image->>'imageUrl', image->>'publicId')
+	RETURNING image_id INTO new_image_id;
+END;
+$$;
+
 --item_image JSON: {publicId, imageUrl}, extra_images JSON: {publicId, imageUrl, displayOrder}[]
 CREATE OR REPLACE PROCEDURE store.create_menu_item(item_name TEXT, item_price NUMERIC(4, 2), item_image JSON, item_description TEXT, OUT item_id SMALLINT,
 	item_grouping_id SMALLINT DEFAULT NULL, extra_groups SMALLINT[] DEFAULT NULL, categories SMALLINT[] DEFAULT NULL, 
@@ -7,9 +18,7 @@ SECURITY DEFINER AS
 $$
 DECLARE item_image_id INTEGER;
 BEGIN
-	INSERT INTO store.image(image_url, public_id)
-	VALUES (item_image->>'imageUrl', item_image->>'publicId')
-	RETURNING image_id INTO item_image_id;
+	CALL store.add_new_image(item_image, item_image_id);
 
 	INSERT INTO store.menu_item(name, price, image_id, description, grouping_id, availability_range)
 	VALUES(item_name, item_price, item_image_id, item_description, item_grouping_id, available_range)
@@ -333,6 +342,20 @@ $$;
 --End of Extra Category
 
 ----Item Subcategory
+CREATE OR REPLACE PROCEDURE store.insert_items_into_category(item_ids SMALLINT[], category_id SMALLINT)
+LANGUAGE plpgsql
+SECURITY DEFINER AS
+$$
+BEGIN
+	MERGE INTO store.menu_item_category T
+	USING (SELECT category_id, U.menu_item_id FROM UNNEST(item_ids) U(menu_item_id)) S
+	ON S.category_id = T.item_category_id AND S.menu_item_id = T.menu_item_id
+	WHEN NOT MATCHED THEN
+		INSERT (menu_item_id, item_category_id)
+		VALUES (S.menu_item_id, S.category_id);
+END;
+$$;
+
 CREATE OR REPLACE PROCEDURE store.create_item_subcategory("name" TEXT, item_category_id SMALLINT, item_ids SMALLINT[], new_id OUT SMALLINT)
 LANGUAGE plpgsql
 SECURITY DEFINER AS
@@ -346,12 +369,72 @@ BEGIN
 		INSERT INTO store.menu_item_subcategory(menu_item_id, item_subcategory_id)
 		SELECT T.menu_item_id, new_id
 		FROM UNNEST(item_ids) T(menu_item_id);
+		
+		CALL store.insert_items_into_category(item_ids, item_category_id);
+	END IF;
+END;
+$$;
+
+--If 'new_category_id' is specified, items will still belong to the old category_id of this subcategory
+CREATE OR REPLACE PROCEDURE store.modify_item_subcategory("id" SMALLINT, new_name TEXT, new_category_id SMALLINT, add_item_ids SMALLINT[], remove_item_ids SMALLINT[])
+LANGUAGE plpgsql
+SECURITY DEFINER AS
+$$
+DECLARE current_category_id SMALLINT := new_category_id;
+BEGIN
+	IF new_name IS NOT NULL OR new_category_id IS NOT NULL THEN
+		UPDATE store.item_subcategory
+		SET "name" = COALESCE(new_name, "name"), item_category_id = COALESCE(new_category_id, item_category_id)
+		WHERE item_subcategory_id = "id";
+	END IF;
+	
+	IF add_item_ids IS NOT NULL THEN
+		IF current_category_id IS NULL THEN
+			SELECT item_category_id INTO current_category_id
+			FROM store.item_subcategory
+			WHERE item_subcategory_id = "id";
+		END IF;
+	
+		INSERT INTO store.menu_item_subcategory(menu_item_id, item_subcategory_id)
+		SELECT T.menu_item_id, current_category_id
+		FROM UNNEST(add_item_ids) T(menu_item_id);
+		
+		CALL store.insert_items_into_category(add_item_ids, current_category_id);
+	END IF;
+	
+	IF remove_item_ids IS NOT NULL THEN
+		DELETE FROM store.menu_item_subcategory
+		WHERE menu_item_id = ANY(remove_item_ids) AND item_subcategory_id = "id";
 	END IF;
 END;
 $$;
 --End of Item Subcategory
 
 --Item Category
+DROP PROCEDURE IF EXISTS store.add_items_with_subcategories_to_category;
+CREATE OR REPLACE PROCEDURE store.add_items_with_subcategories_to_category("id" SMALLINT, item_infos JSON)
+LANGUAGE plpgsql
+SECURITY DEFINER AS
+$$
+BEGIN
+	IF item_infos IS NOT NULL THEN
+		CREATE TEMPORARY TABLE item_data AS (
+			SELECT JPR."itemId", JPR.subcategory
+			FROM JSON_POPULATE_RECORDSET(NULL::store.item_infos, item_infos) JPR
+		);
+		
+		INSERT INTO store.menu_item_subcategory(item_subcategory_id, menu_item_id)
+		SELECT ISC.item_subcategory_id, I."itemId"
+		FROM item_data I
+		JOIN store.item_subcategory ISC ON ISC.name = I.subcategory AND ISC.item_category_id = "id";
+		
+		INSERT INTO store.menu_item_category(item_category_id, menu_item_id)
+		SELECT "id", I."itemId"
+		FROM item_data I;
+	END IF;
+END;
+$$;
+
 CREATE OR REPLACE PROCEDURE store.add_new_subcategories_to_category(category_id SMALLINT, new_subcategories JSON)
 LANGUAGE plpgsql
 SECURITY DEFINER AS
@@ -384,31 +467,107 @@ BEGIN
 	
 	CALL store.add_new_subcategories_to_category(new_id, new_subcategories);
 	
-	IF item_infos IS NOT NULL THEN
-		CREATE TEMPORARY TABLE item_data AS (
-			SELECT JPR."itemId", JPR.subcategory
-			FROM JSON_POPULATE_RECORDSET(NULL::store.item_infos, item_infos) JPR
-		);
-		
-		INSERT INTO store.menu_item_subcategory(item_subcategory_id, menu_item_id)
-		SELECT ISC.item_subcategory_id, I."itemId"
-		FROM item_data I
-		JOIN store.item_subcategory ISC ON ISC.name = I.subcategory AND ISC.item_category_id = new_id;
-		
-		INSERT INTO store.menu_item_category(item_category_id, menu_item_id)
-		SELECT new_id, I."itemId"
-		FROM item_data I;
-	END IF;
+	CALL store.add_items_with_subcategories_to_category(new_id, item_infos);
 END;
 $$;
-
-DROP PROCEDURE IF EXISTS store.create_extra;
-CREATE OR REPLACE PROCEDURE store.create_extra()
+--'[{"name": "New Subb Cat"}]', '[{"itemId": 1, "subcategory": "New Subb Cat"}]'
+CREATE OR REPLACE PROCEDURE store.modify_item_category("id" SMALLINT, new_name TEXT, new_display_order SMALLINT, new_is_active BOOLEAN, add_subcategories JSON, remove_subcategory_ids SMALLINT[], 
+	add_item_infos JSON, remove_item_ids SMALLINT[])
 LANGUAGE plpgsql
 SECURITY DEFINER AS
 $$
 BEGIN
-
+	IF new_name IS NOT NULL OR new_display_order IS NOT NULL OR new_is_active IS NOT NULL THEN
+		UPDATE store.item_category
+		SET "name" = COALESCE(new_name, "name"), display_order = COALESCE(new_display_order, display_order),
+		is_active = COALESCE(new_is_active, is_active)
+		WHERE item_category_id = "id";
+	END IF;
+	
+	CALL store.add_new_subcategories_to_category("id", add_subcategories);
+	
+	IF remove_subcategory_ids IS NOT NULL THEN
+		DELETE FROM store.item_subcategory
+		WHERE item_subcategory_id = ANY(remove_subcategory_ids);
+	END IF;
+	
+	CALL store.add_items_with_subcategories_to_category("id", add_item_infos);
+	
+	IF remove_item_ids IS NOT NULL THEN
+		DELETE FROM store.menu_item_subcategory MIS
+		WHERE menu_item_id = ANY(remove_item_ids) 
+		AND item_subcategory_id IN (SELECT ISC.item_subcategory_id FROM store.item_subcategory ISC WHERE ISC.item_category_id = "id");
+		
+		DELETE FROM store.menu_item_category
+		WHERE menu_item_id = ANY(remove_item_ids) AND item_category_id = "id";
+	END IF;
 END;
 $$;
 --End of Item Category
+
+--Item Grouping
+--item_image JSON: {publicId, imageUrl}
+CREATE OR REPLACE PROCEDURE store.create_item_grouping("name" TEXT, price NUMERIC(4,2), "size" SMALLINT, image JSON, item_ids SMALLINT[], new_id OUT SMALLINT)
+LANGUAGE plpgsql
+SECURITY DEFINER AS
+$$
+DECLARE image_id INTEGER;
+BEGIN
+	CALL store.add_new_image(image, image_id);
+	
+	INSERT INTO store.grouping("name", price, "size", image_id)
+	VALUES("name", price, "size", image_id)
+	RETURNING grouping_id INTO new_id;
+	
+	IF item_ids IS NOT NULL THEN
+		UPDATE store.menu_item
+		SET grouping_id = new_id
+		WHERE menu_item_id = ANY(item_ids);
+	END IF;
+END;
+$$;
+
+DROP PROCEDURE IF EXISTS store.modify_item_grouping;
+CREATE OR REPLACE PROCEDURE store.modify_item_grouping("id" SMALLINT, new_name TEXT, new_price NUMERIC(4,2), new_size SMALLINT, new_image JSON, new_is_active BOOLEAN,
+	add_item_ids SMALLINT[], remove_item_ids SMALLINT[], removed_public_id OUT TEXT)
+LANGUAGE plpgsql
+SECURITY DEFINER AS
+$$
+DECLARE new_image_id INTEGER;
+DECLARE old_image_id INTEGER;
+BEGIN
+	IF new_image IS NOT NULL THEN
+		CALL store.add_new_image(new_image, new_image_id);
+		
+		SELECT image_id INTO old_image_id
+		FROM store.grouping G
+		WHERE G.grouping_id = "id";
+	END IF;
+	
+	IF new_name IS NOT NULL OR new_price IS NOT NULL OR new_image_id IS NOT NULL OR new_is_active IS NOT NULL THEN 
+		UPDATE store.grouping
+		SET "name" = COALESCE(new_name, "name"), price = COALESCE(new_price, price), 
+		"size" = COALESCE(new_size, "size"), image_id = COALESCE(new_image_id, image_id), is_active = COALESCE(new_is_active, is_active)
+		WHERE grouping_id = "id";
+	END IF;
+	
+	IF add_item_ids IS NOT NULL THEN
+		UPDATE store.menu_item
+		SET grouping_id = "id"
+		WHERE menu_item_id = ANY(add_item_ids);
+	END IF;
+	
+	IF remove_item_ids IS NOT NULL THEN
+		UPDATE store.menu_item
+		SET grouping_id = NULL
+		WHERE menu_item_id = ANY(remove_item_ids);
+	END IF;
+	
+	IF old_image_id IS NOT NULL THEN
+		DELETE FROM store.image
+		WHERE image_id = old_image_id
+		RETURNING public_id INTO removed_public_id;
+	END IF;
+END;
+$$;
+--End of Item Grouping

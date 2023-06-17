@@ -456,7 +456,7 @@ ALTER TABLE IF EXISTS store.menu_item_subcategory
     ADD FOREIGN KEY (item_subcategory_id)
     REFERENCES store.item_subcategory (item_subcategory_id) MATCH SIMPLE
     ON UPDATE NO ACTION
-    ON DELETE NO ACTION
+    ON DELETE CASCADE
     NOT VALID;
 
 
