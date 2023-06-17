@@ -175,35 +175,11 @@ END;
 $$;
 
 --Extras
-CREATE OR REPLACE PROCEDURE store.create_extra("name" TEXT, price NUMERIC(4,2), group_ids SMALLINT[], category_id SMALLINT, abbrev TEXT, new_extra_id OUT SMALLINT)
+CREATE OR REPLACE PROCEDURE store.add_extra_to_groups("id" SMALLINT, group_info JSON)
 LANGUAGE plpgsql
 SECURITY DEFINER AS
 $$
 BEGIN
-	INSERT INTO store.extra("name", price, extra_category_id, abbreviation)
-	VALUES("name", price, category_id, abbrev)
-	RETURNING extra_id INTO new_extra_id;
-	
-	IF group_ids IS NOT NULL THEN
-		INSERT INTO store.extra_group_extra(extra_group_id, extra_id)
-		SELECT T.extra_group_id, new_extra_id
-		FROM UNNEST(group_ids) T(extra_group_id);
-	END IF;
-END;
-$$;
-
-CREATE OR REPLACE PROCEDURE store.modify_extra("id" SMALLINT, extra_name TEXT, extra_price NUMERIC(4,2), group_info JSON, remove_group_ids SMALLINT[], category_id SMALLINT, abbrev TEXT, archived BOOLEAN)
-LANGUAGE plpgsql
-SECURITY DEFINER AS
-$$
-BEGIN
-	IF extra_name IS NOT NULL OR extra_price IS NOT NULL OR category_id IS NOT NULL OR abbrev IS NOT NULL OR archived IS NOT NULL THEN
-		UPDATE store.extra
-			SET "name" = COALESCE(extra_name, "name"), price = COALESCE(extra_price, price), extra_category_id = COALESCE(category_id, extra_category_id),
-			abbreviation = COALESCE(abbrev, abbreviation), is_archived = COALESCE(archive, is_archived)
-		WHERE extra_id = "id";
-	END IF;
-	
 	IF group_info IS NOT NULL THEN
 		MERGE INTO store.extra_group_extra T
 		USING (SELECT "id", JPR."extraGroupId", JPR."displayOrder" 
@@ -215,6 +191,35 @@ BEGIN
 			INSERT (extra_group_id, extra_id, display_order)
 			VALUES(S."extraGroupId", S."id", S."displayOrder");
 	END IF;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE store.create_extra("name" TEXT, price NUMERIC(4,2), group_info JSON, category_id SMALLINT, abbrev TEXT, new_extra_id OUT SMALLINT)
+LANGUAGE plpgsql
+SECURITY DEFINER AS
+$$
+BEGIN
+	INSERT INTO store.extra("name", price, extra_category_id, abbreviation)
+	VALUES("name", price, category_id, abbrev)
+	RETURNING extra_id INTO new_extra_id;
+	
+	CALL store.add_extra_to_groups(new_extra_id, group_info);
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE store.modify_extra("id" SMALLINT, extra_name TEXT, extra_price NUMERIC(4,2), group_info JSON, remove_group_ids SMALLINT[], category_id SMALLINT, abbrev TEXT, archived BOOLEAN)
+LANGUAGE plpgsql
+SECURITY DEFINER AS
+$$
+BEGIN
+	IF extra_name IS NOT NULL OR extra_price IS NOT NULL OR category_id IS NOT NULL OR abbrev IS NOT NULL OR archived IS NOT NULL THEN
+		UPDATE store.extra
+			SET "name" = COALESCE(extra_name, "name"), price = COALESCE(extra_price, price), extra_category_id = COALESCE(category_id, extra_category_id),
+			abbreviation = COALESCE(abbrev, abbreviation), is_archived = COALESCE(archived, is_archived)
+		WHERE extra_id = "id";
+	END IF;
+	
+	CALL store.add_extra_to_groups("id", group_info);
 	
 	IF remove_group_ids IS NOT NULL THEN
 		DELETE FROM store.extra_group_extra
@@ -304,7 +309,7 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE PROCEDURE store.create_extra_category("name" TEXT, new_extras JSON, new_id OUT SMALLINT)
+CREATE OR REPLACE PROCEDURE store.create_extra_category("name" TEXT, new_extras JSON, add_extra_ids SMALLINT[], new_id OUT SMALLINT)
 LANGUAGE plpgsql
 SECURITY DEFINER AS
 $$
@@ -313,6 +318,12 @@ BEGIN
 	INSERT INTO store.extra_category("name")
 	VALUES("name")
 	RETURNING extra_category_id INTO new_id;
+	
+	IF add_extra_ids IS NOT NULL THEN
+		UPDATE store.extra
+		SET extra_category_id = new_id
+		WHERE extra_id = ANY(add_extra_ids);
+	END IF;
 	
 	CALL store.add_new_extras_to_category(new_id, new_extras);
 END;
