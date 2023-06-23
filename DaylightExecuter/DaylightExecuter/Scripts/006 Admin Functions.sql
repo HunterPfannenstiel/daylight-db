@@ -258,35 +258,35 @@ $func$;
 SELECT * FROM store.view_menu_items(0::SMALLINT, 10::SMALLINT);
 
 CREATE OR REPLACE FUNCTION store.view_extras()
-RETURNS TABLE (category TEXT, extras JSON[])
+RETURNS TABLE (category_id SMALLINT, extras JSON[])
 SECURITY DEFINER
 LANGUAGE plpgsql
 AS
 $func$
 BEGIN
 	RETURN QUERY
-	SELECT EC.name, array_agg(json_build_object('name', E.name, 'id', E.extra_id))
+	SELECT EC.extra_category_id, array_agg(json_build_object('name', E.name, 'id', E.extra_id))
 	FROM store.extra E
 	JOIN store.extra_category EC ON EC.extra_category_id = E.extra_category_id
-	GROUP BY EC.name;
+	GROUP BY EC.extra_category_id;
 END;
 $func$;
 
 SELECT * FROM store.view_extras();
 
 CREATE OR REPLACE FUNCTION store.fetch_extra_selections("id" SMALLINT)
-RETURNS TABLE (initial_category_id SMALLINT, initial_groups JSON, initial_abbreviation TEXT)
+RETURNS TABLE (initial_category_id SMALLINT, initial_groups JSON, initial_abbreviation TEXT, initial_price NUMERIC(4,2), initial_archive BOOLEAN)
 SECURITY DEFINER
 LANGUAGE plpgsql
 AS
 $func$
 BEGIN
 	RETURN QUERY
-	SELECT E.extra_category_id, json_object_agg(EGE.extra_group_id, true) FILTER (WHERE EGE.extra_group_id IS NOT NULL), E.abbreviation
+	SELECT E.extra_category_id, json_object_agg(EGE.extra_group_id, true) FILTER (WHERE EGE.extra_group_id IS NOT NULL), E.abbreviation, E.price, E.is_archived
 	FROM store.extra E
 	JOIN store.extra_group_extra EGE ON EGE.extra_id = E.extra_id
 	WHERE E.extra_id = "id"
-	GROUP BY E.extra_category_id, E.abbreviation;
+	GROUP BY E.extra_category_id, E.abbreviation, E.price, E.is_archived;
 END;
 $func$;
 
@@ -308,15 +308,17 @@ $func$;
 SELECT * FROM store.view_extra_categories();
 
 CREATE OR REPLACE FUNCTION store.view_extra_groups()
-RETURNS TABLE ("id" SMALLINT, "name" TEXT, extra_category_id SMALLINT)
+RETURNS TABLE (category TEXT, "groups" JSON[])
 SECURITY DEFINER
 LANGUAGE plpgsql
 AS
 $func$
 BEGIN
 	RETURN QUERY
-	SELECT EG.extra_group_id, EG.name, EG.extra_category_id
-	FROM store.extra_group EG;
+	SELECT EC.name, array_agg(json_build_object('id', EG.extra_group_id, 'name', EG.name))
+	FROM store.extra_group EG
+	JOIN store.extra_category EC ON EC.extra_category_id = EG.extra_category_id
+	GROUP BY EC.name;
 END;
 $func$;
 

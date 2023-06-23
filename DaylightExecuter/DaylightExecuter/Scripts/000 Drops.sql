@@ -121,6 +121,7 @@ DROP PROCEDURE IF EXISTS store.modify_item_subcategory;
 DROP PROCEDURE IF EXISTS store.modify_item_category;
 DROP PROCEDURE IF EXISTS store.add_new_image;
 DROP PROCEDURE IF EXISTS store.create_item_grouping;
+DROP PROCEDURE IF EXISTS store.add_items_with_subcategories_to_category;
 DROP TYPE IF EXISTS store.images;
 DROP TYPE IF EXISTS store.extra_group_info;
 DROP TYPE IF EXISTS store.extras_info;

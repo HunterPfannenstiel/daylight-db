@@ -221,6 +221,8 @@ BEGIN
 	
 	CALL store.add_extra_to_groups("id", group_info);
 	
+	--Check if category id changed, if so, remove extra from all groups of previous cateogry
+	
 	IF remove_group_ids IS NOT NULL THEN
 		DELETE FROM store.extra_group_extra
 		WHERE extra_group_id = ANY(remove_group_ids) AND extra_id = "id";
@@ -422,7 +424,6 @@ $$;
 --End of Item Subcategory
 
 --Item Category
-DROP PROCEDURE IF EXISTS store.add_items_with_subcategories_to_category;
 CREATE OR REPLACE PROCEDURE store.add_items_with_subcategories_to_category("id" SMALLINT, item_infos JSON)
 LANGUAGE plpgsql
 SECURITY DEFINER AS
