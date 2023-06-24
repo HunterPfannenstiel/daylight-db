@@ -268,9 +268,15 @@ BEGIN
 	END IF;
 	
 	IF extras_info IS NOT NULL THEN
-		INSERT INTO store.extra_group_extra(extra_id, extra_group_id, display_order)
-		SELECT JPR."extraId", "id", JPR."displayOrder"
-		FROM JSON_POPULATE_RECORDSET(NULL::store.extras_info, extras_info) JPR;
+		MERGE INTO store.extra_group_extra T
+		USING (SELECT "id", JPR."extraId", JPR."displayOrder" 
+			   FROM JSON_POPULATE_RECORDSET(NULL::store.extras_info, extras_info) JPR) S 
+			   ON S."extraId" = T.extra_id AND S."id" = T.extra_group_id
+		WHEN MATCHED THEN
+			UPDATE SET display_order = S."displayOrder"
+		WHEN NOT MATCHED THEN
+			INSERT (extra_group_id, extra_id, display_order)
+			VALUES(S."id", S."extraId", S."displayOrder");
 	END IF;
 	
 	IF remove_extra_ids IS NOT NULL THEN

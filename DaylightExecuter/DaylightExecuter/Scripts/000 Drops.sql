@@ -89,6 +89,8 @@ DROP FUNCTION IF EXISTS store.fetch_item_subcategory_customizations;
 DROP FUNCTION IF EXISTS store.view_item_groupings;
 DROP FUNCTION IF EXISTS store.view_item_grouping_items;
 DROP FUNCTION IF EXISTS store.view_item_grouping_selections;
+DROP FUNCTION IF EXISTS store.fetch_extra_category_customizations;
+DROP FUNCTION IF EXISTS store.fetch_extra_category_selections;
 DROP PROCEDURE IF EXISTS store.check_cart_lock;
 DROP PROCEDURE IF EXISTS store.update_cart;
 DROP PROCEDURE IF EXISTS store.create_cart;

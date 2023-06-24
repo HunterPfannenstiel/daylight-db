@@ -307,6 +307,39 @@ $func$;
 
 SELECT * FROM store.view_extra_categories();
 
+CREATE OR REPLACE FUNCTION store.fetch_extra_category_selections(category_id SMALLINT)
+RETURNS TABLE (initial_extras JSON)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT json_object_agg(E.extra_id, E.name || ' '|| EC.name)
+	FROM store.extra E
+	JOIN store.extra_category EC ON EC.extra_category_id = E.extra_category_id
+	WHERE EC.extra_category_id = category_id;
+END;
+$func$;
+
+SELECT * FROM store.fetch_extra_category_selections(1::SMALLINT);
+
+CREATE OR REPLACE FUNCTION store.fetch_extra_category_customizations()
+RETURNS TABLE ("id" SMALLINT, "name" TEXT, category TEXT)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT E.extra_id, E.name, EC.name
+	FROM store.extra E
+	JOIN store.extra_category EC ON EC.extra_category_id = E.extra_category_id;
+END;
+$func$;
+
+SELECT * FROM store.fetch_extra_category_customizations();
+
 CREATE OR REPLACE FUNCTION store.view_extra_groups()
 RETURNS TABLE (category TEXT, "groups" JSON[])
 SECURITY DEFINER
