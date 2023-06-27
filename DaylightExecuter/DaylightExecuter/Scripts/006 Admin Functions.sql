@@ -167,6 +167,22 @@ BEGIN
 END;
 $func$;
 
+CREATE OR REPLACE FUNCTION store.search_entity_items(phrase TEXT DEFAULT '')
+RETURNS TABLE ("id" SMALLINT, "name" TEXT)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT MI.menu_item_id, MI.name
+	FROM store.menu_item MI
+	WHERE MI.name ILIKE '%' || phrase || '%';
+END;
+$func$;
+
+SELECT * FROM store.search_entity_items();
+
 --order_contents: {name, amount, breakdown: {extras: {category, extra, abbreviation}[], amount}[]}[]
 CREATE OR REPLACE FUNCTION store.fetch_orders(from_date DATE, to_date DATE)
 RETURNS TABLE (order_id INTEGER, pickup_date TEXT, created_on TEXT, is_printed BOOLEAN, is_verified BOOLEAN, error_message TEXT, order_contents JSON, payment_processor TEXT, customer_info JSON, pickup_time TEXT, "location" TEXT, payment_uid TEXT, price_details JSON)
@@ -438,9 +454,10 @@ $func$
 BEGIN
 	IF category_id IS NOT NULL THEN
 		RETURN QUERY
-		SELECT json_object_agg(MIC.menu_item_id, true)
+		SELECT json_object_agg(MIC.menu_item_id, MI.name)
 		FROM store.item_category IC
 		JOIN store.menu_item_category MIC ON MIC.item_category_id = IC.item_category_id
+		JOIN store.menu_item MI ON MI.menu_item_id = MIC.menu_item_id
 		WHERE IC.item_category_id = category_id;
 	ELSE
 		RETURN QUERY
@@ -485,16 +502,33 @@ $func$;
 
 SELECT * FROM store.view_item_subcategories();
 
-CREATE OR REPLACE FUNCTION store.fetch_item_category_selections("id" SMALLINT)
-RETURNS TABLE (initial_subcategories JSON, initial_items JSON, is_active BOOLEAN)
+CREATE OR REPLACE FUNCTION store.get_item_category_subcategory_items("id" SMALLINT)
+RETURNS TABLE (subcategory_items JSON)
 SECURITY DEFINER
 LANGUAGE plpgsql
 AS
 $func$
 BEGIN
 	RETURN QUERY
-	SELECT (SELECT json_object_agg("IS".item_subcategory_id, true) FROM store.item_subcategory "IS" WHERE "IS".item_category_id = "id"),
-	(SELECT * FROM store.view_category_initial_items("id")), IC.is_active
+	SELECT json_object_agg(ISC.name, 
+		(SELECT array_agg(MIS.menu_item_id)
+		FROM store.menu_item_subcategory MIS
+		WHERE MIS.item_subcategory_id = ISC.item_subcategory_id))
+	FROM store.item_subcategory ISC
+	WHERE ISC.item_category_id = "id";
+END;
+$func$;
+
+CREATE OR REPLACE FUNCTION store.fetch_item_category_selections("id" SMALLINT)
+RETURNS TABLE (initial_subcategories JSON[], initial_items JSON, subcategory_items JSON, is_active BOOLEAN)
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT (SELECT array_agg(json_build_object('id', "IS".item_subcategory_id, 'name', "IS".name)) FROM store.item_subcategory "IS" WHERE "IS".item_category_id = "id"),
+	(SELECT * FROM store.view_category_initial_items("id")), (SELECT * FROM store.get_item_category_subcategory_items("id")), IC.is_active
 	FROM store.item_category IC
 	WHERE IC.item_category_id = "id";
 END;
@@ -517,7 +551,7 @@ BEGIN
 END;
 $func$;
 
-SELECT * FROM store.fetch_item_subcategory_selections(1::SMALLINT);
+SELECT * FROM store.fetch_item_subcategory_selections(4::SMALLINT);
 
 CREATE OR REPLACE FUNCTION store.fetch_item_category_customizations(page_size SMALLINT)
 RETURNS TABLE (items JSON, subcategories JSON)

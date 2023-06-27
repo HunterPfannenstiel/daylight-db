@@ -337,11 +337,17 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE PROCEDURE store.modify_extra_category("id" SMALLINT, new_extras JSON, add_extra_ids SMALLINT[], change_extra_ids JSON)
+CREATE OR REPLACE PROCEDURE store.modify_extra_category("id" SMALLINT, new_name TEXT, new_extras JSON, add_extra_ids SMALLINT[], change_extra_ids JSON)
 LANGUAGE plpgsql
 SECURITY DEFINER AS
 $$
 BEGIN
+	IF new_name IS NOT NULL THEN
+		UPDATE store.extra_category
+			SET "name" = new_name
+		WHERE extra_category_id = "id";
+	END IF;
+	
 	CALL store.add_new_extras_to_category("id", new_extras);
 	
 	IF add_extra_ids IS NOT NULL THEN
@@ -415,7 +421,7 @@ BEGIN
 		END IF;
 	
 		INSERT INTO store.menu_item_subcategory(menu_item_id, item_subcategory_id)
-		SELECT T.menu_item_id, current_category_id
+		SELECT T.menu_item_id, "id"
 		FROM UNNEST(add_item_ids) T(menu_item_id);
 		
 		CALL store.insert_items_into_category(add_item_ids, current_category_id);
@@ -445,10 +451,6 @@ BEGIN
 		SELECT ISC.item_subcategory_id, I."itemId"
 		FROM item_data I
 		JOIN store.item_subcategory ISC ON ISC.name = I.subcategory AND ISC.item_category_id = "id";
-		
-		INSERT INTO store.menu_item_category(item_category_id, menu_item_id)
-		SELECT "id", I."itemId"
-		FROM item_data I;
 	END IF;
 END;
 $$;
@@ -471,8 +473,23 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE PROCEDURE store.update_item_category_display_orders(display_orders JSON)
+LANGUAGE plpgsql
+SECURITY DEFINER AS
+$$
+BEGIN
+	MERGE INTO store.item_category T
+	USING (SELECT (JAE."info"->>'id')::SMALLINT AS item_category_id, (JAE."info"->>'displayOrder')::SMALLINT AS display_order FROM JSON_ARRAY_ELEMENTS(display_orders) JAE("info")) S
+	ON S.item_category_id = T.item_category_id
+	WHEN MATCHED THEN
+		UPDATE SET display_order = S.display_order;
+END;
+$$;
+
+--CALL store.update_item_category_display_orders('[{"id": 1, "displayOrder": 2}, {"id": 2, "displayOrder": 2}]');
+
 --item_infos: {itemId: number, subcategory: string}
-CREATE OR REPLACE PROCEDURE store.create_item_category("name" TEXT, display_order SMALLINT, new_subcategories JSON, item_infos JSON, new_id OUT SMALLINT)
+CREATE OR REPLACE PROCEDURE store.create_item_category("name" TEXT, display_order SMALLINT, category_display_orders JSON, new_subcategories JSON, item_infos JSON, category_item_ids SMALLINT[], new_id OUT SMALLINT)
 LANGUAGE plpgsql
 SECURITY DEFINER AS
 $$
@@ -483,14 +500,22 @@ BEGIN
 	VALUES("name", display_order)
 	RETURNING item_category_id INTO new_id;
 	
+	CALL store.update_item_category_display_orders(category_display_orders);
+	
 	CALL store.add_new_subcategories_to_category(new_id, new_subcategories);
 	
 	CALL store.add_items_with_subcategories_to_category(new_id, item_infos);
+	
+	IF category_item_ids IS NOT NULL THEN
+		INSERT INTO store.menu_item_category(item_category_id, menu_item_id)
+		SELECT new_id, UN.menu_item_id
+		FROM UNNEST(category_item_ids) UN(menu_item_id);
+	END IF;
 END;
 $$;
 --'[{"name": "New Subb Cat"}]', '[{"itemId": 1, "subcategory": "New Subb Cat"}]'
-CREATE OR REPLACE PROCEDURE store.modify_item_category("id" SMALLINT, new_name TEXT, new_display_order SMALLINT, new_is_active BOOLEAN, add_subcategories JSON, remove_subcategory_ids SMALLINT[], 
-	add_item_infos JSON, remove_item_ids SMALLINT[])
+CREATE OR REPLACE PROCEDURE store.modify_item_category("id" SMALLINT, new_name TEXT, new_display_order SMALLINT, new_is_active BOOLEAN, category_display_orders JSON, add_subcategories JSON, remove_subcategory_ids SMALLINT[], 
+	add_item_infos JSON, remove_item_infos JSON, add_item_ids SMALLINT[], remove_item_ids SMALLINT[])
 LANGUAGE plpgsql
 SECURITY DEFINER AS
 $$
@@ -510,6 +535,21 @@ BEGIN
 	END IF;
 	
 	CALL store.add_items_with_subcategories_to_category("id", add_item_infos);
+	
+	IF remove_item_infos IS NOT NULL THEN
+		DELETE FROM store.menu_item_subcategory
+		WHERE (menu_item_id, item_subcategory_id) IN (
+			SELECT JPR."itemId", ISC.item_subcategory_id
+			FROM JSON_POPULATE_RECORDSET(NULL::store.item_infos, remove_item_infos) JPR
+			JOIN store.item_subcategory ISC ON ISC.name = JPR.subcategory
+		);
+	END IF;
+	
+	IF add_item_ids IS NOT NULL THEN
+		INSERT INTO store.menu_item_category(item_category_id, menu_item_id)
+		SELECT "id", UN.menu_item_id
+		FROM UNNEST(add_item_ids) UN(menu_item_id);
+	END IF;
 	
 	IF remove_item_ids IS NOT NULL THEN
 		DELETE FROM store.menu_item_subcategory MIS

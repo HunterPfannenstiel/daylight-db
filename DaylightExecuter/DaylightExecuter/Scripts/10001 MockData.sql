@@ -93,3 +93,5 @@ VALUES('Co-owner', 'The same permissions as the owner but without the ability to
 INSERT INTO store.team_member_role(team_member_id, role_id)
 VALUES(1, 1),
 (2, 2);
+
+SELECT * FROM store.menu_item_subcategory
