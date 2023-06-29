@@ -274,14 +274,14 @@ $func$;
 SELECT * FROM store.view_menu_items(0::SMALLINT, 10::SMALLINT);
 
 CREATE OR REPLACE FUNCTION store.view_extras()
-RETURNS TABLE (category_id SMALLINT, extras JSON[])
+RETURNS TABLE ("name" TEXT, entities JSON[])
 SECURITY DEFINER
 LANGUAGE plpgsql
 AS
 $func$
 BEGIN
 	RETURN QUERY
-	SELECT EC.extra_category_id, array_agg(json_build_object('name', E.name, 'id', E.extra_id))
+	SELECT EC.name, array_agg(json_build_object('name', E.name, 'id', E.extra_id))
 	FROM store.extra E
 	JOIN store.extra_category EC ON EC.extra_category_id = E.extra_category_id
 	GROUP BY EC.extra_category_id;
