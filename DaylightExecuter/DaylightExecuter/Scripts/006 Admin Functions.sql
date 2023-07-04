@@ -274,14 +274,14 @@ $func$;
 SELECT * FROM store.view_menu_items(0::SMALLINT, 10::SMALLINT);
 
 CREATE OR REPLACE FUNCTION store.view_extras()
-RETURNS TABLE ("name" TEXT, entities JSON[])
+RETURNS TABLE ("name" TEXT, "id" SMALLINT, entities JSON[])
 SECURITY DEFINER
 LANGUAGE plpgsql
 AS
 $func$
 BEGIN
 	RETURN QUERY
-	SELECT EC.name, array_agg(json_build_object('name', E.name, 'id', E.extra_id))
+	SELECT EC.name, EC.extra_category_id, array_agg(json_build_object('name', E.name, 'id', E.extra_id))
 	FROM store.extra E
 	JOIN store.extra_category EC ON EC.extra_category_id = E.extra_category_id
 	GROUP BY EC.extra_category_id;
@@ -357,17 +357,17 @@ $func$;
 SELECT * FROM store.fetch_extra_category_customizations();
 
 CREATE OR REPLACE FUNCTION store.view_extra_groups()
-RETURNS TABLE (category TEXT, "groups" JSON[])
+RETURNS TABLE ("name" TEXT, "id" SMALLINT, entities JSON[])
 SECURITY DEFINER
 LANGUAGE plpgsql
 AS
 $func$
 BEGIN
 	RETURN QUERY
-	SELECT EC.name, array_agg(json_build_object('id', EG.extra_group_id, 'name', EG.name))
-	FROM store.extra_group EG
-	JOIN store.extra_category EC ON EC.extra_category_id = EG.extra_category_id
-	GROUP BY EC.name;
+	SELECT EC.name, EC.extra_category_id, array_agg(json_build_object('id', EG.extra_group_id, 'name', EG.name))
+	FROM store.extra_category EC
+	LEFT JOIN store.extra_group EG ON EG.extra_category_id = EC.extra_category_id
+	GROUP BY EC.name, EC.extra_category_id;
 END;
 $func$;
 
@@ -427,16 +427,16 @@ END;
 $func$;
 
 SELECT * FROM store.view_menu_items_with_extra_group_ids(0::SMALLINT, 10::SMALLINT);
-
+--(SELECT json_agg(tb) FROM store.view_extra_categories() tb),
 CREATE OR REPLACE FUNCTION store.fetch_extra_group_customizations(page_size SMALLINT)
-RETURNS TABLE (categories JSON, items JSON, extras JSON)
+RETURNS TABLE (items JSON, extras JSON)
 SECURITY DEFINER
 LANGUAGE plpgsql
 AS
 $func$
 BEGIN
 	RETURN QUERY
-	SELECT (SELECT json_agg(tb) FROM store.view_extra_categories() tb), (SELECT json_agg(tb) FROM store.view_menu_items_with_extra_group_ids(0::SMALLINT, page_size) tb),
+	SELECT (SELECT json_agg(tb) FROM store.view_menu_items_with_extra_group_ids(0::SMALLINT, page_size) tb),
 	(SELECT json_agg(tb) FROM store.view_extras() tb);
 END;
 $func$;

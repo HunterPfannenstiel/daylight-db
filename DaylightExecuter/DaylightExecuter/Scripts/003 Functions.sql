@@ -197,6 +197,95 @@ BEGIN
 END;
 $func$;
 
+DROP FUNCTION IF EXISTS store.get_item_images;
+CREATE OR REPLACE FUNCTION store.get_item_images(m_id INTEGER)
+RETURNS TABLE (image_urls TEXT[])
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT array_prepend(I.image_url, 
+		(SELECT array_agg(I2.image_url)
+		FROM store.menu_item_image MII
+		JOIN store.image I2 ON I2.image_id = MII.image_id
+		WHERE MII.menu_item_id = m_id
+		GROUP BY MII.display_order
+		ORDER BY MII.display_order)
+	)
+	FROM store.menu_item MI
+	JOIN store.image I ON I.image_id = MI.image_id
+	WHERE MI.menu_item_id = m_id;
+END;
+$func$;
+
+CREATE OR REPLACE FUNCTION store.get_cart_item_extras(c_id INTEGER, c_item_id SMALLINT)
+RETURNS TABLE (extras JSON)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT json_agg(tb)
+	FROM (
+		SELECT E.name, EC.name, E.price
+		FROM store.cart_extra CE
+		JOIN store.extra E ON E.extra_id = CE.extra_id
+		JOIN store.extra_category EC ON EC.extra_category_id = E.extra_category_id
+		WHERE CE.cart_id = c_id AND CE.cart_item_id = c_item_id
+	) tb;
+END;
+$func$;
+
+CREATE OR REPLACE FUNCTION store.get_cart_items(user_cart_id INTEGER)
+RETURNS TABLE (items JSON)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT json_object_agg(tb.menu_item_id, json_build_object('details', tb.details, 'items', tb.item))
+	FROM (
+		SELECT MI.menu_item_id, json_build_object('name', MI.name, 'price', MI.price, 'imageUrl', I.image_url, 'availableDays', array_remove(array_agg(W.weekday), NULL), 
+		'availableRange', CASE WHEN MI.availability_range IS NOT NULL THEN 
+			to_jsonb(json_build_object('from', to_char(LOWER(MI.availability_range), 'YYYY-MM-DD'), 'to', to_char(UPPER(MI.availability_range), 'YYYY-MM-DD')))
+			ELSE NULL END) AS details,
+		json_object_agg(CI.cart_item_id, json_build_object('amount', CI.amount, 'extras', (SELECT * FROM store.get_cart_item_extras(user_cart_id, CI.cart_item_id)))) AS item
+		FROM store.cart_item CI
+		JOIN store.menu_item MI ON MI.menu_item_id = CI.menu_item_id
+		LEFT JOIN store.weekday_availability WA ON WA.menu_item_id = MI.menu_item_id
+		LEFT JOIN store.weekday W ON W.weekday_id = WA.weekday_id
+		JOIN store.image I ON I.image_id = MI.image_id
+		WHERE CI.cart_id = user_cart_id
+		GROUP BY MI.menu_item_id, MI.name, MI.price, I.image_url, (CASE WHEN MI.availability_range IS NOT NULL THEN 
+			to_jsonb(json_build_object('from', to_char(LOWER(MI.availability_range), 'YYYY-MM-DD'), 'to', to_char(UPPER(MI.availability_range), 'YYYY-MM-DD')))
+			ELSE NULL END)
+	) tb;
+END;
+$func$;
+
+CREATE OR REPLACE FUNCTION store.get_cart(c_id INTEGER)
+RETURNS TABLE (items JSON, status TEXT)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS
+$func$
+DECLARE cart_status TEXT;
+BEGIN
+	SELECT CCS.status INTO cart_status FROM store.check_cart_status(c_id) CCS;
+	IF cart_status = 'Pending' OR cart_status = 'Open' THEN
+		RETURN QUERY
+		SELECT (SELECT * FROM store.get_cart_items(c_id)), cart_status;
+	ELSE
+		RETURN QUERY
+		SELECT json_build_object(), cart_status;
+	END IF;
+END;
+$func$;
+
 CREATE OR REPLACE FUNCTION store.view_account_orders(user_account_id INTEGER)
 RETURNS TABLE (cart_id INTEGER, cart JSON)
 LANGUAGE plpgsql
@@ -216,7 +305,7 @@ BEGIN
 END;
 $func$;
 
-CREATE OR REPLACE FUNCTION store.check_cart_process(user_cart_id INTEGER)
+CREATE OR REPLACE FUNCTION store.check_cart_status(user_cart_id INTEGER)
 RETURNS TABLE (status TEXT)
 LANGUAGE plpgsql 
 SECURITY DEFINER AS

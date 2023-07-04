@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS store.cart
 CREATE TABLE IF NOT EXISTS store.cart_item
 (
     cart_id integer NOT NULL,
-    cart_item_id integer NOT NULL,
+    cart_item_id smallint NOT NULL,
     menu_item_id integer NOT NULL,
     amount integer NOT NULL,
     subtotal numeric(5, 2),
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS store.cart_item
 
 CREATE TABLE IF NOT EXISTS store.cart_extra
 (
-    cart_item_id integer NOT NULL,
+    cart_item_id smallint NOT NULL,
     cart_id integer NOT NULL,
     extra_id integer NOT NULL,
     PRIMARY KEY (cart_item_id, cart_id, extra_id)
@@ -184,8 +184,7 @@ CREATE TABLE IF NOT EXISTS store.extra_group_extra
     extra_id smallint NOT NULL,
     extra_group_id smallint NOT NULL,
 	display_order smallint,
-    PRIMARY KEY (extra_id, extra_group_id),
-	UNIQUE(extra_group_id, display_order)
+    PRIMARY KEY (extra_id, extra_group_id)
 );
 
 CREATE TABLE IF NOT EXISTS store.item_extra_group
