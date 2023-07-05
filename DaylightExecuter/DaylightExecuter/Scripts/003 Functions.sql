@@ -86,13 +86,13 @@ END;
 $func$;
 
 CREATE OR REPLACE FUNCTION store.get_item_extras(item_id INTEGER)
-RETURNS TABLE (extras JSON)
+RETURNS TABLE (extras JSON[])
 LANGUAGE plpgsql
 AS
 $func$
 BEGIN
 	RETURN QUERY
-	SELECT json_agg(tb) AS extras 
+	SELECT array_agg(tb."group") AS extras
 	FROM (
 		SELECT json_build_object('category', EC.name, 'extras', json_agg(json_strip_nulls(json_build_object('name', E.name, 'price', E.price, 'id', E.extra_id)) ORDER BY EGE.display_order)) AS "group"
 		FROM store.item_extra_group IEG
@@ -102,14 +102,13 @@ BEGIN
 		LEFT JOIN store.extra_category EC ON EC.extra_category_id = EG.extra_category_id
 		WHERE IEG.menu_item_id = item_id
 		GROUP BY EC.name
-	) tb
-	WHERE (tb."group"->>'category') IS NOT NULL;
+	) tb;
 END;
 $func$;
 
 --Fetches the details of a menu item
 CREATE OR REPLACE FUNCTION store.fetch_item_details(item_name TEXT)
-RETURNS TABLE (name TEXT, id SMALLINT, price NUMERIC(4,2), description TEXT, group_price NUMERIC(4,2), group_name TEXT, group_size SMALLINT, extras JSON, image_urls TEXT[])
+RETURNS TABLE (name TEXT, id SMALLINT, price NUMERIC(4,2), description TEXT, group_price NUMERIC(4,2), group_name TEXT, group_size SMALLINT, extras JSON[], image_urls TEXT[])
 LANGUAGE plpgsql 
 SECURITY DEFINER AS
 $func$
