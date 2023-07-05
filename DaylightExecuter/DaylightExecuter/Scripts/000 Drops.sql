@@ -101,6 +101,7 @@ DROP FUNCTION IF EXISTS store.get_monthly_donuts_sold;
 DROP FUNCTION IF EXISTS store.get_weekly_donuts_sold;
 DROP FUNCTION IF EXISTS store.get_daily_donuts_sold;
 DROP FUNCTION IF EXISTS store.get_donuts_sold;
+DROP FUNCTION IF EXISTS store.get_dates;
 DROP PROCEDURE IF EXISTS store.check_cart_lock;
 DROP PROCEDURE IF EXISTS store.update_cart;
 DROP PROCEDURE IF EXISTS store.create_cart;
