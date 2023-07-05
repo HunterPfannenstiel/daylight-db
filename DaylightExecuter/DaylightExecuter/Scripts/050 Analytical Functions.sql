@@ -9,59 +9,59 @@ END;
 $func$;*/
 
 CREATE OR REPLACE FUNCTION store.get_monthly_donuts_sold(begin_date DATE, end_date DATE, donut_type TEXT)
-RETURNS TABLE (year DOUBLE PRECISION, month TEXT, amount NUMERIC)
+RETURNS TABLE (year DOUBLE PRECISION, month DOUBLE PRECISION, amount NUMERIC)
 LANGUAGE plpgsql
 SECURITY DEFINER AS
 $func$
 BEGIN
 	RETURN QUERY
 		SELECT DATE_PART('year', DS.created_on) AS year, 
-			TO_CHAR(DS.created_on::TIMESTAMP, 'Mon') AS month,
+			DATE_PART('month', DS.created_on) as month,
 			SUM(DS.amount) AS amount
 		FROM store.get_donuts_sold(donut_type) DS
 		WHERE DS.created_on BETWEEN DATE_TRUNC('month', begin_date) AND DATE_TRUNC('month', end_date) + INTERVAL '1 month - 1 day'
 		GROUP BY DATE_PART('year', DS.created_on),
-			TO_CHAR(DS.created_on::TIMESTAMP, 'Mon')
+			DATE_PART('month', DS.created_on)
 		ORDER BY year ASC, month ASC;
 END;
 $func$;
 
 CREATE OR REPLACE FUNCTION store.get_weekly_donuts_sold(begin_date DATE, end_date DATE, donut_type TEXT)
-RETURNS TABLE (year DOUBLE PRECISION, month TEXT, week DOUBLE PRECISION, amount NUMERIC)
+RETURNS TABLE (year DOUBLE PRECISION, month DOUBLE PRECISION, week DOUBLE PRECISION, amount NUMERIC)
 LANGUAGE plpgsql
 SECURITY DEFINER AS
 $func$
 BEGIN
 	RETURN QUERY
 		SELECT DATE_PART('year', DS.created_on) AS year, 
-			TO_CHAR(DS.created_on::TIMESTAMP, 'Mon') AS month,
+			DATE_PART('month', DS.created_on) AS month,
 			DATE_PART('week', DS.created_on) AS week,
 			SUM(DS.amount) AS amount
 		FROM store.get_donuts_sold(donut_type) DS
 		/* 1 week - 1 day might be wrong */
 		WHERE DS.created_on BETWEEN DATE_TRUNC('week', begin_date) AND DATE_TRUNC('week', end_date) + INTERVAL '1 week - 1 day'
 		GROUP BY DATE_PART('year', DS.created_on),
-			TO_CHAR(DS.created_on::TIMESTAMP, 'Mon'),
+			DATE_PART('month', DS.created_on),
 			DATE_PART('week', DS.created_on)
 		ORDER BY year ASC, month ASC, week ASC;
 END;
 $func$;
 
 CREATE OR REPLACE FUNCTION store.get_daily_donuts_sold(begin_date DATE, end_date DATE, donut_type TEXT)
-RETURNS TABLE (year DOUBLE PRECISION, month TEXT, day DOUBLE PRECISION, amount NUMERIC)
+RETURNS TABLE (year DOUBLE PRECISION, month DOUBLE PRECISION, day DOUBLE PRECISION, amount NUMERIC)
 LANGUAGE plpgsql
 SECURITY DEFINER AS
 $func$
 BEGIN
 	RETURN QUERY
 		SELECT DATE_PART('year', DS.created_on) AS year, 
-			TO_CHAR(DS.created_on::TIMESTAMP, 'Mon') AS month,
+			DATE_PART('month', DS.created_on) AS month,
 			DATE_PART('day', DS.created_on) AS day,
 			SUM(DS.amount) AS amount
 		FROM store.get_donuts_sold(donut_type) DS
 		WHERE DS.created_on BETWEEN begin_date AND end_date
 		GROUP BY DATE_PART('year', DS.created_on),
-			TO_CHAR(DS.created_on::TIMESTAMP, 'Mon'),
+			DATE_PART('month', DS.created_on),
 			DATE_PART('day', DS.created_on)
 		ORDER BY year ASC, month ASC, day ASC;
 END;

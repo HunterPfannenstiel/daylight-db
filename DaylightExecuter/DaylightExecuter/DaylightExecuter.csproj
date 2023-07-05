@@ -24,6 +24,7 @@
     <None Remove="Scripts\1000 Data.sql" />
     <None Remove="Scripts\10000 Data.sql" />
     <None Remove="Scripts\10001 MockData.sql" />
+    <None Remove="Scripts\10002 Order Mock Data.sql" />
     <None Remove="Scripts\1001 MockData.sql" />
     <None Remove="Scripts\Data.sql" />
   </ItemGroup>
@@ -40,6 +41,7 @@
     <EmbeddedResource Include="Scripts\10000 Data.sql" />
     <EmbeddedResource Include="Scripts\10001 MockData.sql" />
     <EmbeddedResource Include="Scripts\1000 Account Procedures.sql" />
+    <EmbeddedResource Include="Scripts\10002 Order Mock Data.sql" />
   </ItemGroup>
 
   <ItemGroup>
