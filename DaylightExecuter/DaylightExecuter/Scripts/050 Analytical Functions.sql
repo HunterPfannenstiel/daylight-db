@@ -74,7 +74,7 @@ BEGIN
 			COALESCE(SUM(DS.amount), 0) AS amount
 		FROM store.get_donuts_sold(donut_type) DS
 			RIGHT JOIN store.get_dates(begin_date, end_date, 'day', '1 day') D 
-				ON DS.created_on = D.date
+				ON DATE_TRUNC('day', DS.created_on) = D.date
 		WHERE D.date BETWEEN begin_date AND end_date
 		GROUP BY DATE_PART('year', D.date),
 			DATE_PART('month', D.date),
@@ -102,9 +102,10 @@ END;
 $func$;
 
 /*SELECT name FROM store.menu_item;
+SELECT * FROM store.order WHERE created_on = '2023-07-05'
 SELECT * FROM store.get_dates('2023-06-15', '2023-07-15', 'day', '1 day');
 SELECT * FROM store.get_donuts_sold('Glaze');
 SELECT * FROM store.get_monthly_donuts_sold('2023-06-15', '2023-07-15', NULL)
 SELECT * FROM store.get_weekly_donuts_sold('2023-04-01', '2023-06-30', NULL)
-SELECT * FROM store.get_daily_donuts_sold('2023-04-01', '2023-06-30', NULL)
+SELECT * FROM store.get_daily_donuts_sold('2023-7-1', '2023-7-6', NULL)
 SELECT DATE_TRUNC('week', '2023-06-26'::date) + INTERVAL '6 days';*/
