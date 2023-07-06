@@ -96,11 +96,16 @@ DROP FUNCTION IF EXISTS store.fetch_extra_category_customizations;
 DROP FUNCTION IF EXISTS store.fetch_extra_category_selections;
 DROP FUNCTION IF EXISTS store.get_item_category_subcategory_items;
 DROP FUNCTION IF EXISTS store.search_entity_items;
+/*Old functions */
 DROP FUNCTION IF EXISTS store.get_donuts_sold_within_time_frame;
 DROP FUNCTION IF EXISTS store.get_monthly_donuts_sold;
 DROP FUNCTION IF EXISTS store.get_weekly_donuts_sold;
 DROP FUNCTION IF EXISTS store.get_daily_donuts_sold;
 DROP FUNCTION IF EXISTS store.get_donuts_sold;
+/*End old functions*/
+DROP FUNCTION IF EXISTS store.get_item_analytics;
+DROP FUNCTION IF EXISTS store.filter_items_and_date_range;
+DROP FUNCTION IF EXISTS store.get_orders_in_date_range;
 DROP FUNCTION IF EXISTS store.get_dates;
 DROP PROCEDURE IF EXISTS store.check_cart_lock;
 DROP PROCEDURE IF EXISTS store.update_cart;
