@@ -26,8 +26,8 @@ $func$;
 CREATE OR REPLACE FUNCTION store.get_item_analytics(
 	begin_date DATE, 
 	end_date DATE,
-	preserve_null_dates BOOL,
 	time_unit TEXT,
+	preserve_null_dates BOOL,
 	item_category TEXT,
 	item_name TEXT
 )
@@ -36,7 +36,7 @@ LANGUAGE plpgsql
 SECURITY DEFINER AS
 $func$
 BEGIN
-	IF time_unit = 'monthly' THEN
+	IF time_unit = 'month' THEN
 		RETURN QUERY
 			SELECT DATE_PART('year', I.created_on) AS year, 
 				DATE_PART('month', I.created_on) as month,
@@ -53,7 +53,7 @@ BEGIN
 			GROUP BY DATE_PART('year', I.created_on),
 				DATE_PART('month', I.created_on)
 			ORDER BY year ASC, month ASC;
-	ELSEIF time_unit = 'weekly' THEN 
+	ELSEIF time_unit = 'week' THEN 
 		RETURN QUERY
 			SELECT DATE_PART('year', DATE_TRUNC('week', I.created_on)) AS year, 
 				MIN(DATE_PART('month', DATE_TRUNC('week', I.created_on))) AS month,
@@ -160,9 +160,10 @@ BEGIN
 			SELECT O.created_on::DATE,
 				O.cart_id
 			FROM store.order O
+			WHERE O.created_on BETWEEN begin_date AND end_date
 			GROUP BY O.created_on::DATE,
 				O.cart_id
-			ORDER BY O.created_on;
+			ORDER BY O.created_on::DATE;
 	END IF;
 END;
 $func$;
@@ -250,11 +251,11 @@ $func$;*/
 SELECT MI.name FROM store.menu_item MI INNER JOIN store.menu_item_category MIC ON MI.menu_item_id = MIC.menu_item_id 
 	INNER JOIN store.item_category IC ON MIC.item_category_id = IC.item_category_id WHERE IC.name = 'Donuts'
 
-SELECT * FROM store.get_item_analytics('2023-06-15', '2023-07-15', true, 'weeky', NULL, NULL)
+SELECT * FROM store.get_item_analytics('2023-06-15', '2023-07-15', 'weeky', true, NULL, NULL)
 
 SELECT * FROM store.filter_items_and_date_range('2023-06-15', '2023-07-15', true, NULL, NULL)
 SELECT * FROM store.filter_items_and_date_range('2023-06-15', '2023-07-15', true, 'Featured', NULL)
-SELECT * FROM store.get_orders_in_date_range('2023-06-15', '2023-07-15', true);
+SELECT * FROM store.get_orders_in_date_range('2023-06-15', '2023-07-15', false);
 SELECT * FROM store.get_dates('2023-06-15', '2023-07-15', 'day', '1 day');
 SELECT * FROM store.get_donuts_sold('Glaze');
 SELECT * FROM store.get_monthly_donuts_sold('2023-06-15', '2023-07-15', NULL)
