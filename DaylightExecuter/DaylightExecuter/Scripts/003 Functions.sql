@@ -448,6 +448,20 @@ BEGIN
 	ORDER BY IC.display_order ASC;
 END;
 $func$;
+
+CREATE OR REPLACE FUNCTION store.fetch_category_names()
+RETURNS TABLE (name TEXT)
+LANGUAGE plpgsql 
+SECURITY DEFINER AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT IC.name
+	FROM store.item_category IC
+	WHERE IC.is_active = true
+	ORDER BY IC.name ASC;
+END;
+$func$;
 --END OF CATEGORY FUNCTIONS
 
 CREATE OR REPLACE FUNCTION store.get_user_role(user_email TEXT)

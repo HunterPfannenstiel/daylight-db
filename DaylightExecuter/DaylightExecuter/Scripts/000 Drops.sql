@@ -57,6 +57,7 @@ DROP FUNCTION IF EXISTS store.fetch_paypal_order_items;
 DROP FUNCTION IF EXISTS store.fetch_group_info;
 DROP FUNCTION IF EXISTS store.fetch_menu_names;
 DROP FUNCTION IF EXISTS store.fetch_categories;
+DROP FUNCTION IF EXISTS store.fetch_category_names;
 DROP FUNCTION IF EXISTS store.get_user_id;
 DROP FUNCTION IF EXISTS store.fetch_item_customizations;
 DROP FUNCTION IF EXISTS store.fetch_item_selections;
