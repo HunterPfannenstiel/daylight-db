@@ -229,7 +229,7 @@ BEGIN
 	RETURN QUERY
 	SELECT json_agg(tb)
 	FROM (
-		SELECT E.name, EC.name, E.price
+		SELECT E.name || ' ' || EC.name AS "text", E.price
 		FROM store.cart_extra CE
 		JOIN store.extra E ON E.extra_id = CE.extra_id
 		JOIN store.extra_category EC ON EC.extra_category_id = E.extra_category_id
@@ -334,7 +334,7 @@ SECURITY DEFINER AS
 $func$
 BEGIN
 	RETURN QUERY
-	SELECT L.common_name, L.city, L.state, L.zip, L.address, L.phone_number, L.location_id, array_agg(json_build_object('time', to_char(PT.pickup_time, 'HH:MI AM'), 'id', PT.pickup_time_id) ORDER BY PT.pickup_time ASC) AS times
+	SELECT L.common_name, L.city, L.state, L.zip, L.address, L.phone_number, L.location_id, array_agg(json_build_object('name', to_char(PT.pickup_time, 'HH:MI AM'), 'id', PT.pickup_time_id) ORDER BY PT.pickup_time ASC) AS times
 	FROM store.location L
 	JOIN store.location_pickup_time LPT ON LPT.location_id = L.location_id
 	JOIN store.pickup_time PT ON PT.pickup_time_id = LPT.pickup_time_id
