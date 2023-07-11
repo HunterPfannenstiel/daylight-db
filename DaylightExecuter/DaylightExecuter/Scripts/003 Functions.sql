@@ -172,7 +172,7 @@ $func$;
 
 --Cart Functions
 CREATE OR REPLACE FUNCTION store.view_cart(user_cart_id INTEGER)
-RETURNS TABLE (unit_price NUMERIC(4,2), cart_item_id INTEGER, menu_item_id SMALLINT, amount INTEGER, name TEXT, image TEXT, group_name TEXT, 
+RETURNS TABLE (unit_price NUMERIC(4,2), cart_item_id SMALLINT, menu_item_id SMALLINT, amount INTEGER, name TEXT, image TEXT, group_name TEXT, 
 			  group_size SMALLINT, group_price NUMERIC(4,2), extra_info JSON)
 LANGUAGE plpgsql 
 SECURITY DEFINER AS
