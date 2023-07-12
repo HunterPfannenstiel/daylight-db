@@ -172,7 +172,7 @@ $func$;
 
 --Cart Functions
 CREATE OR REPLACE FUNCTION store.view_cart(user_cart_id INTEGER)
-RETURNS TABLE (unit_price NUMERIC(4,2), cart_item_id SMALLINT, menu_item_id SMALLINT, amount INTEGER, name TEXT, image TEXT, group_name TEXT, 
+RETURNS TABLE (unit_price NUMERIC(4,2), cart_item_id SMALLINT, menu_item_id SMALLINT, amount SMALLINT, "name" TEXT, image TEXT, group_name TEXT, 
 			  group_size SMALLINT, group_price NUMERIC(4,2), extra_info JSON)
 LANGUAGE plpgsql 
 SECURITY DEFINER AS
@@ -413,7 +413,7 @@ END;
 $func$;
 
 CREATE OR REPLACE FUNCTION store.fetch_paypal_order_items(user_cart_id INTEGER)
-RETURNS TABLE (name TEXT, price NUMERIC(4,2), amount INTEGER, extra_price NUMERIC(4,2), extras JSON[])
+RETURNS TABLE (name TEXT, price NUMERIC(4,2), amount SMALLINT, extra_price NUMERIC(4,2), extras JSON[])
 LANGUAGE plpgsql
 SECURITY DEFINER AS
 $func$
