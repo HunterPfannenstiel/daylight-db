@@ -172,7 +172,7 @@ $func$;
 
 --Cart Functions
 CREATE OR REPLACE FUNCTION store.view_cart(user_cart_id INTEGER)
-RETURNS TABLE (unit_price NUMERIC(4,2), cart_item_id SMALLINT, menu_item_id SMALLINT, amount INTEGER, name TEXT, image TEXT, group_name TEXT, 
+RETURNS TABLE (unit_price NUMERIC(4,2), cart_item_id SMALLINT, menu_item_id SMALLINT, amount SMALLINT, "name" TEXT, image TEXT, group_name TEXT, 
 			  group_size SMALLINT, group_price NUMERIC(4,2), extra_info JSON)
 LANGUAGE plpgsql 
 SECURITY DEFINER AS
@@ -229,7 +229,7 @@ BEGIN
 	RETURN QUERY
 	SELECT json_agg(tb)
 	FROM (
-		SELECT E.name, EC.name, E.price
+		SELECT E.name || ' ' || EC.name AS "text", E.price
 		FROM store.cart_extra CE
 		JOIN store.extra E ON E.extra_id = CE.extra_id
 		JOIN store.extra_category EC ON EC.extra_category_id = E.extra_category_id
@@ -337,7 +337,7 @@ SECURITY DEFINER AS
 $func$
 BEGIN
 	RETURN QUERY
-	SELECT L.common_name, L.city, L.state, L.zip, L.address, L.phone_number, L.location_id, array_agg(json_build_object('time', to_char(PT.pickup_time, 'HH:MI AM'), 'id', PT.pickup_time_id) ORDER BY PT.pickup_time ASC) AS times
+	SELECT L.common_name, L.city, L.state, L.zip, L.address, L.phone_number, L.location_id, array_agg(json_build_object('name', to_char(PT.pickup_time, 'HH:MI AM'), 'id', PT.pickup_time_id) ORDER BY PT.pickup_time ASC) AS times
 	FROM store.location L
 	JOIN store.location_pickup_time LPT ON LPT.location_id = L.location_id
 	JOIN store.pickup_time PT ON PT.pickup_time_id = LPT.pickup_time_id
@@ -416,7 +416,7 @@ END;
 $func$;
 
 CREATE OR REPLACE FUNCTION store.fetch_paypal_order_items(user_cart_id INTEGER)
-RETURNS TABLE (name TEXT, price NUMERIC(4,2), amount INTEGER, extra_price NUMERIC(4,2), extras JSON[])
+RETURNS TABLE (name TEXT, price NUMERIC(4,2), amount SMALLINT, extra_price NUMERIC(4,2), extras JSON[])
 LANGUAGE plpgsql
 SECURITY DEFINER AS
 $func$

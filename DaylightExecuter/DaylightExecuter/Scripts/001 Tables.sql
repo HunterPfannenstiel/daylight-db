@@ -49,8 +49,8 @@ CREATE TABLE IF NOT EXISTS store.cart_item
 (
     cart_id integer NOT NULL,
     cart_item_id smallint NOT NULL,
-    menu_item_id integer NOT NULL,
-    amount integer NOT NULL,
+    menu_item_id smallint NOT NULL,
+    amount smallint NOT NULL,
     subtotal numeric(5, 2),
     PRIMARY KEY (cart_id, cart_item_id),
     UNIQUE (cart_id, cart_item_id)

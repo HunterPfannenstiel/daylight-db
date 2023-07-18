@@ -175,21 +175,22 @@ END;
 $$;
 
 --Extras
-CREATE OR REPLACE PROCEDURE store.add_extra_to_groups("id" SMALLINT, group_info JSON)
+DROP PROCEDURE store.add_extra_to_groups;
+CREATE OR REPLACE PROCEDURE store.add_extra_to_groups(extra_id SMALLINT, group_info JSON)
 LANGUAGE plpgsql
 SECURITY DEFINER AS
 $$
 BEGIN
 	IF group_info IS NOT NULL THEN
 		MERGE INTO store.extra_group_extra T
-		USING (SELECT "id", JPR."extraGroupId", JPR."displayOrder" 
+		USING (SELECT extra_id, JPR."id" AS extra_group_id, JPR."displayOrder" 
 			   FROM JSON_POPULATE_RECORDSET(NULL::store.extra_group_info, group_info) JPR) S 
-			   ON S."id" = T.extra_id AND S."extraGroupId" = T.extra_group_id
+			   ON S.extra_id = T.extra_id AND S.extra_group_id = T.extra_group_id
 		WHEN MATCHED THEN
 			UPDATE SET display_order = S."displayOrder"
 		WHEN NOT MATCHED THEN
 			INSERT (extra_group_id, extra_id, display_order)
-			VALUES(S."extraGroupId", S."id", S."displayOrder");
+			VALUES(S.extra_group_id, S.extra_id, S."displayOrder");
 	END IF;
 END;
 $$;
@@ -243,7 +244,7 @@ BEGIN
 	
 	IF extras_info IS NOT NULL THEN
 		INSERT INTO store.extra_group_extra(extra_id, extra_group_id, display_order)
-		SELECT JPR."extraId", new_group_id, JPR."displayOrder"
+		SELECT JPR."id", new_group_id, JPR."displayOrder"
 		FROM JSON_POPULATE_RECORDSET(NULL::store.extras_info, extras_info) JPR;
 	END IF;
 	
@@ -254,8 +255,8 @@ BEGIN
 	END IF;
 END;
 $$;
-
-CREATE OR REPLACE PROCEDURE store.modify_extra_group("id" SMALLINT, group_name TEXT, extras_info JSON, remove_extra_ids SMALLINT[], 
+DROP PROCEDURE IF EXISTS store.modify_extra_group;
+CREATE OR REPLACE PROCEDURE store.modify_extra_group(e_g_id SMALLINT, group_name TEXT, extras_info JSON, remove_extra_ids SMALLINT[], 
 	category_id SMALLINT, add_menu_item_ids SMALLINT[], remove_menu_item_ids SMALLINT[])
 LANGUAGE plpgsql
 SECURITY DEFINER AS
@@ -264,35 +265,35 @@ BEGIN
 	IF group_name IS NOT NULL OR category_id IS NOT NULL THEN
 		UPDATE store.extra_group
 		SET "name" = COALESCE(group_name, "name"), extra_category_id = COALESCE(category_id, extra_category_id)
-		WHERE extra_group_id = "id";
+		WHERE extra_group_id = e_g_id;
 	END IF;
 	
 	IF extras_info IS NOT NULL THEN
 		MERGE INTO store.extra_group_extra T
-		USING (SELECT "id", JPR."extraId", JPR."displayOrder" 
+		USING (SELECT e_g_id, JPR."id" AS extra_id, JPR."displayOrder" 
 			   FROM JSON_POPULATE_RECORDSET(NULL::store.extras_info, extras_info) JPR) S 
-			   ON S."extraId" = T.extra_id AND S."id" = T.extra_group_id
+			   ON S.e_g_id = T.extra_id AND S.extra_group_id = T.extra_group_id
 		WHEN MATCHED THEN
 			UPDATE SET display_order = S."displayOrder"
 		WHEN NOT MATCHED THEN
 			INSERT (extra_group_id, extra_id, display_order)
-			VALUES(S."id", S."extraId", S."displayOrder");
+			VALUES(S.e_g_id, S.extra_id, S."displayOrder");
 	END IF;
 	
 	IF remove_extra_ids IS NOT NULL THEN
 		DELETE FROM store.extra_group_extra
-		WHERE extra_id = ANY(remove_extra_ids) AND extra_group_id = "id";
+		WHERE extra_id = ANY(remove_extra_ids) AND extra_group_id = e_g_id;
 	END IF;
 	
 	IF add_menu_item_ids IS NOT NULL THEN
 		INSERT INTO store.item_extra_group(menu_item_id, extra_group_id)
-		SELECT T.menu_item_id, "id"
+		SELECT T.menu_item_id, e_g_id
 		FROM UNNEST(add_menu_item_ids) T(menu_item_id);
 	END IF;
 	
 	IF remove_menu_item_ids IS NOT NULL THEN
 		DELETE FROM store.item_extra_group
-		WHERE menu_item_id = ANY(remove_menu_item_ids) AND extra_group_id = "id";
+		WHERE menu_item_id = ANY(remove_menu_item_ids) AND extra_group_id = e_g_id;
 	END IF;
 END;
 $$;

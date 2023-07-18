@@ -26,12 +26,12 @@ CREATE TYPE store.images AS (
 );
 
 CREATE TYPE store.extra_group_info AS (
-	"extraGroupId" SMALLINT,
+	"id" SMALLINT,
 	"displayOrder" SMALLINT
 );
 
 CREATE TYPE store.extras_info AS (
-	"extraId" SMALLINT,
+	"id" SMALLINT,
 	"displayOrder" SMALLINT
 );
 
