@@ -285,24 +285,27 @@ BEGIN
 END;
 $func$;
 
+DROP FUNCTION store.view_account_orders
 CREATE OR REPLACE FUNCTION store.view_account_orders(user_account_id INTEGER)
-RETURNS TABLE (cart_id INTEGER, cart JSON)
+RETURNS TABLE (order_date DATE, cart_id INTEGER, cart JSON)
 LANGUAGE plpgsql
 SECURITY DEFINER AS
 $func$
 BEGIN
 	RETURN QUERY
-	SELECT C.cart_id AS cart_id,
-	(
-		SELECT json_agg(CI) 
-		FROM store.view_cart(C.cart_id) CI
-	) AS cart
+	SELECT O.created_on::DATE AS order_date,
+		C.cart_id AS cart_id,
+		(
+			SELECT json_agg(CI) 
+			FROM store.view_cart(C.cart_id) CI
+		) AS cart
 	FROM store.cart C
 	JOIN store.order O ON C.cart_id = O.cart_id
 	WHERE O.account_id = user_account_id
 	ORDER BY O.created_on ASC;
 END;
 $func$;
+SELECT * FROM store.view_account_orders(2)
 
 CREATE OR REPLACE FUNCTION store.check_cart_status(user_cart_id INTEGER)
 RETURNS TABLE (status TEXT)
