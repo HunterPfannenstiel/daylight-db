@@ -31,7 +31,7 @@ CREATE TYPE store.extra_group_info AS (
 );
 
 CREATE TYPE store.extras_info AS (
-	"id" SMALLINT,
+	"extraId" SMALLINT,
 	"displayOrder" SMALLINT
 );
 

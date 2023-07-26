@@ -133,7 +133,7 @@ END;
 $func$;
 
 CREATE OR REPLACE FUNCTION store.search_items(phrase TEXT DEFAULT '', includeArchived BOOLEAN DEFAULT NULL, includeInactive BOOLEAN DEFAULT NULL)
-RETURNS TABLE (name TEXT, image_url TEXT, menu_item_id SMALLINT)
+RETURNS TABLE ("name" TEXT, image_url TEXT, "id" SMALLINT)
 SECURITY DEFINER
 LANGUAGE plpgsql
 AS

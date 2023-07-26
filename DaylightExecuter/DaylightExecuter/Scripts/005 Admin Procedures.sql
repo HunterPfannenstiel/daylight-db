@@ -255,7 +255,7 @@ BEGIN
 	END IF;
 END;
 $$;
-DROP PROCEDURE IF EXISTS store.modify_extra_group;
+
 CREATE OR REPLACE PROCEDURE store.modify_extra_group(e_g_id SMALLINT, group_name TEXT, extras_info JSON, remove_extra_ids SMALLINT[], 
 	category_id SMALLINT, add_menu_item_ids SMALLINT[], remove_menu_item_ids SMALLINT[])
 LANGUAGE plpgsql
@@ -270,9 +270,9 @@ BEGIN
 	
 	IF extras_info IS NOT NULL THEN
 		MERGE INTO store.extra_group_extra T
-		USING (SELECT e_g_id, JPR."id" AS extra_id, JPR."displayOrder" 
+		USING (SELECT e_g_id, JPR."extraId" AS extra_id, JPR."displayOrder" 
 			   FROM JSON_POPULATE_RECORDSET(NULL::store.extras_info, extras_info) JPR) S 
-			   ON S.e_g_id = T.extra_id AND S.extra_group_id = T.extra_group_id
+			   ON S.extra_id = T.extra_id AND S.e_g_id = T.extra_group_id
 		WHEN MATCHED THEN
 			UPDATE SET display_order = S."displayOrder"
 		WHEN NOT MATCHED THEN
