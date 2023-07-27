@@ -285,7 +285,6 @@ BEGIN
 END;
 $func$;
 
-DROP FUNCTION store.view_account_orders
 CREATE OR REPLACE FUNCTION store.view_account_orders(user_account_id INTEGER)
 RETURNS TABLE (order_date DATE, cart_id INTEGER, cart JSON)
 LANGUAGE plpgsql
@@ -305,7 +304,6 @@ BEGIN
 	ORDER BY O.created_on ASC;
 END;
 $func$;
-SELECT * FROM store.view_account_orders(2)
 
 CREATE OR REPLACE FUNCTION store.check_cart_status(user_cart_id INTEGER)
 RETURNS TABLE (status TEXT)
