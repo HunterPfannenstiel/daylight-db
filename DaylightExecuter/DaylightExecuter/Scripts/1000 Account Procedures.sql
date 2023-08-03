@@ -28,7 +28,7 @@ BEGIN
 		END IF;
 		
 	IF info_id IS NOT NULL THEN
-		IF NOT EXISTS (SELECT * FROM store.user_info UI WHERE UI.user_info_id = info_id AND UI.account_id = info_account_id) THEN
+		IF NOT EXISTS (SELECT * FROM store.user_info UI WHERE UI.user_info_id = info_id AND UI.account_id = info_account_id AND UI.is_archived = false) THEN
 			RAISE EXCEPTION 'User info does not exist for the info_id passed in or the passed in info_account_id is not associated with info_id';
 		END IF;
 		
@@ -51,3 +51,5 @@ BEGIN
 	END IF;
 END;
 $$;
+
+SELECT * FROM store.user_info UI WHERE UI.user_info_id = 58 AND UI.account_id = 2 AND UI.is_archived = true
