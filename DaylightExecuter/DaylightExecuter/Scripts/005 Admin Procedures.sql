@@ -87,7 +87,7 @@ BEGIN
 		SET name = COALESCE(item_details->>'name', name), price = COALESCE((item_details->>'price')::NUMERIC(4,2), price),
 		description = COALESCE(item_details->>'description', description), grouping_id = (item_details->>'groupingId')::SMALLINT, 
 		image_id = COALESCE(display_image_id, image_id), is_active = COALESCE((item_details->>'isActive')::BOOLEAN, is_active),
-		is_archived = COALESCE((item_details->>'isArchived')::BOOLEAN, is_archived), availability_range = COALESCE((item_details->>'availabilityRange')::DATERANGE, availability_range)
+		is_archived = COALESCE((item_details->>'isArchived')::BOOLEAN, is_archived), availability_range = (item_details->>'availabilityRange')::DATERANGE
 		WHERE menu_item_id = item_id;
 	END IF;
 	IF add_extra_groups IS NOT NULL THEN
