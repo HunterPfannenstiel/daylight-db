@@ -36,7 +36,23 @@ LANGUAGE plpgsql
 SECURITY DEFINER AS
 $func$
 BEGIN
-	IF time_unit = 'month' THEN
+	IF time_unit = 'year' THEN
+		RETURN QUERY
+			SELECT DATE_PART('year', I.created_on) AS year, 
+				1::DOUBLE PRECISION as month,
+				1::DOUBLE PRECISION as day,
+				SUM(I.amount) AS amount,
+				SUM(I.subtotal) as total
+			FROM store.filter_items_and_date_range(
+				DATE_TRUNC('year', begin_date)::DATE,
+				(DATE_TRUNC('year', end_date) + INTERVAL '1 year - 1 day')::DATE,
+				preserve_null_dates,
+				item_category,
+				item_name
+			) I
+			GROUP BY DATE_PART('year', I.created_on)
+			ORDER BY year ASC, month ASC;
+	ELSEIF time_unit = 'month' THEN
 		RETURN QUERY
 			SELECT DATE_PART('year', I.created_on) AS year, 
 				DATE_PART('month', I.created_on) as month,
