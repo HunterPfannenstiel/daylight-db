@@ -97,6 +97,7 @@ DROP FUNCTION IF EXISTS store.fetch_extra_category_customizations;
 DROP FUNCTION IF EXISTS store.fetch_extra_category_selections;
 DROP FUNCTION IF EXISTS store.get_item_category_subcategory_items;
 DROP FUNCTION IF EXISTS store.search_entity_items;
+DROP FUNCTION IF EXISTS store.get_tax_amount;
 /*Old functions */
 DROP FUNCTION IF EXISTS store.get_donuts_sold_within_time_frame;
 DROP FUNCTION IF EXISTS store.get_monthly_donuts_sold;

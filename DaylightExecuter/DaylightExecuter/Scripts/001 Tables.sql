@@ -21,7 +21,8 @@ CREATE TABLE IF NOT EXISTS store."order"
     created_on timestamp(0) NOT NULL DEFAULT NOW(),
     user_info_id integer,
 	account_id integer,
-    PRIMARY KEY (order_id)
+    PRIMARY KEY (order_id),
+	UNIQUE(cart_id)
 );
 
 CREATE TABLE IF NOT EXISTS store.location

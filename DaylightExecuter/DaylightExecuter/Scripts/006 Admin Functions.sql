@@ -203,6 +203,8 @@ BEGIN
 END;
 $func$;
 
+--SELECT * FROM store.fetch_orders('2023-08-01'::DATE, '2023-08-10');
+
 CREATE OR REPLACE FUNCTION store.fetch_order_cart(cart_order_id INTEGER)
 RETURNS TABLE (order_contents JSON)
 SECURITY DEFINER
@@ -287,8 +289,6 @@ BEGIN
 	GROUP BY EC.extra_category_id;
 END;
 $func$;
-
-SELECT * FROM store.view_extras();
 
 CREATE OR REPLACE FUNCTION store.fetch_extra_selections("id" SMALLINT)
 RETURNS TABLE (initial_category_id SMALLINT, initial_groups JSON, initial_abbreviation TEXT, initial_price NUMERIC(4,2), initial_archive BOOLEAN)

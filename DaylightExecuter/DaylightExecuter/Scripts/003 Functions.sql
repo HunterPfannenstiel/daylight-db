@@ -267,7 +267,7 @@ END;
 $func$;
 
 CREATE OR REPLACE FUNCTION store.get_cart(c_id INTEGER)
-RETURNS TABLE (items JSON, status TEXT)
+RETURNS TABLE (items JSON, status TEXT, tax NUMERIC(3,3))
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS
@@ -277,11 +277,23 @@ BEGIN
 	SELECT CCS.status INTO cart_status FROM store.check_cart_status(c_id) CCS;
 	IF cart_status = 'Pending' OR cart_status = 'Open' THEN
 		RETURN QUERY
-		SELECT (SELECT * FROM store.get_cart_items(c_id)), cart_status;
+		SELECT (SELECT * FROM store.get_cart_items(c_id)), cart_status, (SELECT TA.tax_amount FROM store.tax TA);
 	ELSE
 		RETURN QUERY
-		SELECT json_build_object(), cart_status;
+		SELECT json_build_object(), cart_status, '0'::NUMERIC(3,3);
 	END IF;
+END;
+$func$;
+
+CREATE OR REPLACE FUNCTION store.get_tax_amount()
+RETURNS TABLE (tax NUMERIC(3,3))
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS
+$func$
+BEGIN
+	RETURN QUERY
+	SELECT TA.tax_amount FROM store.tax TA;
 END;
 $func$;
 
@@ -314,14 +326,14 @@ BEGIN
 	IF (SELECT C.is_locked FROM store.cart C WHERE C.cart_id = user_cart_id) THEN
 		IF (SELECT O.is_verified FROM store.order O WHERE O.cart_id = user_cart_id) THEN
 			RETURN QUERY
-			SELECT 'Complete' AS status;
+			SELECT 'Complete';
 		ELSE
 			RETURN QUERY
-			SELECT 'Pending' AS status;
+			SELECT 'Pending';
 		END IF;
 	ELSE
 		RETURN QUERY
-		SELECT 'Open' AS status;
+		SELECT 'Open';
 	END IF;
 END;
 $func$;
